@@ -43,8 +43,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <div id="status" class="status" style="display:none;"></div>																									
 </div>																									
-
-https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec	
+																									
 <!-- 出荷エリア -->																									
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
@@ -68,8 +67,8 @@ https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1a
 </div>																									
 																									
 <script>																									
-// ★新しいGASウェブアプリURLをここに貼り付けてください																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbz1K5bK4K5-YOUR-ID-HERE/exec";																									
+// 写真に写っていたご自身のURLをセット済みです																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaK0arztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2QG5Y32w_3J/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
 let currentMode = 'OUT_ITEM';																									
@@ -129,17 +128,15 @@ prepareInItem(code);
 }																									
 }																									
 																									
-// JSONP通信（CORSブロック回避）																									
 function fetchProductData(barcode) {																									
 showStatus('商品データ取得中...', 'success');																									
 																									
 const callbackName = 'cb_' + Date.now();																									
 const script = document.createElement('script');																									
 																									
-// 10秒タイムアウト設定																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASのURLまたはデプロイ設定を確認してください');																									
+triggerError('通信タイムアウト：GASの設定を確認してください');																									
 }, 10000);																									
 																									
 function cleanup() {																									
@@ -166,7 +163,7 @@ triggerError(data.error || '未登録の商品です');
 script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&callback=${callbackName}`;																									
 script.onerror = function() {																									
 cleanup();																									
-triggerError('通信エラー：アクセス権限（Webアプリ：全員）を確認してください');																									
+triggerError('通信エラー：接続できませんでした');																									
 };																									
 																									
 document.body.appendChild(script);																									
