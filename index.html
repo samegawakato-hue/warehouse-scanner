@@ -2,27 +2,405 @@
 <html lang="ja">																									
 <head>																									
 <meta charset="UTF-8">																									
-<title>カメラテスト</title>																									
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">																									
+<title>店舗別ピッキング</title>																									
+																									
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>																									
+																									
+<style>																									
+body {																									
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;																									
+margin: 0;																									
+background: #f4f5f7;																									
+color: #111;																									
+}																									
+																									
+.wrap {																									
+max-width: 720px;																									
+margin: 0 auto;																									
+padding: 16px;																									
+}																									
+																									
+h1 {																									
+text-align: center;																									
+font-size: 24px;																									
+}																									
+																									
+.card {																									
+background: white;																									
+border-radius: 14px;																									
+padding: 16px;																									
+margin-bottom: 14px;																									
+}																									
+																									
+button {																									
+width: 100%;																									
+padding: 16px;																									
+margin-top: 10px;																									
+border: 0;																									
+border-radius: 10px;																									
+font-size: 18px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+}																									
+																									
+.start {																									
+background: #1976d2;																									
+color: white;																									
+}																									
+																									
+.stop {																									
+background: #555;																									
+color: white;																									
+}																									
+																									
+#reader {																									
+width: 100%;																									
+margin-top: 14px;																									
+overflow: hidden;																									
+border-radius: 8px;																									
+}																									
+																									
+#status {																									
+margin-top: 12px;																									
+padding: 12px;																									
+border-radius: 10px;																									
+background: #eef1f4;																									
+font-size: 15px;																									
+font-weight: bold;																									
+line-height: 1.4;																									
+word-break: break-all;																									
+}																									
+																									
+#result {																									
+margin-top: 12px;																									
+font-size: 28px;																									
+font-weight: 800;																									
+word-break: break-all;																									
+}																									
+																									
+.product-name {																									
+font-size: 28px;																									
+font-weight: 800;																									
+margin-bottom: 10px;																									
+}																									
+																									
+.total-label {																									
+text-align: center;																									
+margin-top: 18px;																									
+font-weight: bold;																									
+}																									
+																									
+.total-qty {																									
+font-size: 48px;																									
+font-weight: 900;																									
+text-align: center;																									
+margin: 6px 0 12px;																									
+}																									
+																									
+table {																									
+width: 100%;																									
+border-collapse: collapse;																									
+margin-top: 10px;																									
+}																									
+																									
+th,																									
+td {																									
+padding: 10px 5px;																									
+border-bottom: 1px solid #ddd;																									
+text-align: left;																									
+}																									
+																									
+th:last-child,																									
+td:last-child {																									
+text-align: center;																									
+}																									
+																									
+.qty {																									
+font-size: 22px;																									
+font-weight: 800;																									
+}																									
+</style>																									
 </head>																									
-<body style="text-align:center; padding-top:20px;">																									
-<button onclick="testCamera()" style="font-size:20px; padding:10px 20px;">カメラテスト実行</button>																									
-<div id="status" style="margin:20px; font-weight:bold;"></div>																									
-<video id="video" autoplay playsinline style="width:100%; max-width:400px; border:1px solid #ccc;"></video>																									
+																									
+<body>																									
+																									
+<div class="wrap">																									
+																									
+<h1>店舗別ピッキング</h1>																									
+																									
+<div class="card">																									
+																									
+<button id="startBtn" class="start" onclick="startScanner()">																									
+📷 商品バーコードをスキャン																									
+</button>																									
+																									
+<button																									
+id="stopBtn"																									
+class="stop"																									
+style="display:none"																									
+onclick="stopScanner()">																									
+カメラを閉じる																									
+</button>																									
+																									
+<div id="reader"></div>																									
+																									
+<div id="status">																									
+「商品バーコードをスキャン」を押してください																									
+</div>																									
+																									
+</div>																									
+																									
+<div class="card">																									
+<div>読み取り結果</div>																									
+<div id="result">未読取</div>																									
+</div>																									
+																									
+<div id="productCard" class="card" style="display:none;">																									
+<div id="productName" class="product-name"></div>																									
+																									
+<div>																									
+商品コード：																									
+<strong id="productCode"></strong>																									
+</div>																									
+																									
+<div>																									
+実物バーコード：																									
+<strong id="productBarcode"></strong>																									
+</div>																									
+																									
+<div class="total-label">本日の出荷合計</div>																									
+																									
+<div id="totalQty" class="total-qty">0</div>																									
+</div>																									
+																									
+<div id="storesCard" class="card" style="display:none;">																									
+<h2>出荷店舗</h2>																									
+																									
+<table>																									
+<thead>																									
+<tr>																									
+<th>No</th>																									
+<th>店舗</th>																									
+<th>店番</th>																									
+<th>数量</th>																									
+</tr>																									
+</thead>																									
+																									
+<tbody id="storesBody"></tbody>																									
+</table>																									
+</div>																									
+																									
+</div>																									
 																									
 <script>																									
-async function testCamera() {																									
-const status = document.getElementById('status');																									
-status.textContent = 'カメラ起動中...';																									
-try {																									
-const stream = await navigator.mediaDevices.getUserMedia({																									
-video: { facingMode: "environment" }																									
+const API_URL =																									
+https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec;																									
+																									
+let html5QrCode = null;																									
+let running = false;																									
+let callbackCounter = 0;																									
+																									
+																									
+function apiGet(params) {																									
+return new Promise(function(resolve, reject) {																									
+const callbackName = "gasCallback_" + Date.now() + "_" + callbackCounter++;																									
+const script = document.createElement("script");																									
+																									
+const timeout = setTimeout(function() {																									
+cleanup();																									
+reject(new Error("GASから応答がありません"));																									
+}, 12000);																									
+																									
+function cleanup() {																									
+clearTimeout(timeout);																									
+try { delete window[callbackName]; } catch (e) {}																									
+if (script.parentNode) {																									
+script.parentNode.removeChild(script);																									
+}																									
+}																									
+																									
+window[callbackName] = function(data) {																									
+cleanup();																									
+resolve(data);																									
+};																									
+																									
+const query = new URLSearchParams();																									
+Object.keys(params).forEach(function(key) {																									
+query.append(key, params[key]);																									
 });																									
-document.getElementById('video').srcObject = stream;																									
-status.textContent = '✅ カメラの起動に成功しました！';																									
-} catch (err) {																									
-status.textContent = '❌ エラー発生: ' + err.name + ' - ' + err.message;																									
+query.append("callback", callbackName);																									
+																									
+script.src = API_URL + "?" + query.toString();																									
+script.onerror = function() {																									
+cleanup();																									
+reject(new Error("Googleスプレッドシートに接続できません"));																									
+};																									
+																									
+document.body.appendChild(script);																									
+});																									
+}																									
+																									
+																									
+async function startScanner() {																									
+if (running) return;																									
+																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#111";																									
+statusEl.textContent = "カメラを起動しています…";																									
+																									
+await stopScanner();																									
+																									
+try {																									
+// 確実な起動を実現するためWeb標準のgetUserMediaを直接実行																									
+const constraints = {																									
+video: {																									
+facingMode: { ideal: "environment" }																									
+}																									
+};																									
+																									
+html5QrCode = new Html5Qrcode("reader", {																									
+formatsToSupport: [																									
+Html5QrcodeSupportedFormats.UPC_A,																									
+Html5QrcodeSupportedFormats.UPC_E,																									
+Html5QrcodeSupportedFormats.EAN_13,																									
+Html5QrcodeSupportedFormats.EAN_8,																									
+Html5QrcodeSupportedFormats.CODE_128,																									
+Html5QrcodeSupportedFormats.CODE_39																									
+],																									
+verbose: false																									
+});																									
+																									
+const config = {																									
+fps: 20,																									
+disableFlip: true,																									
+qrbox: { width: 280, height: 120 }																									
+};																									
+																									
+// mediaStreamConstraints方式で直接起動																									
+await html5QrCode.start(																									
+constraints.video,																									
+config,																									
+onScanSuccess,																									
+onScanError																									
+);																									
+																									
+running = true;																									
+document.getElementById("startBtn").style.display = "none";																									
+document.getElementById("stopBtn").style.display = "block";																									
+statusEl.textContent = "バーコードを横向きに、枠内に合わせてください";																									
+																									
+} catch (error) {																									
+console.error("Camera Start Error:", error);																									
+statusEl.style.color = "#d32f2f";																									
+statusEl.textContent = "⚠️ カメラ起動エラー: " + (error.message || error);																									
+running = false;																									
+html5QrCode = null;																									
+}																									
+}																									
+																									
+																									
+async function onScanSuccess(decodedText) {																									
+// ① 先にカメラをストップしてリソース解放																									
+await stopScanner();																									
+																									
+document.getElementById("result").textContent = decodedText;																									
+																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#2e7d32";																									
+statusEl.textContent = "✅ バーコード読み取り成功。商品を検索しています…";																									
+																									
+if (navigator.vibrate) {																									
+navigator.vibrate(150);																									
+}																									
+																									
+// ② その後GASに通信																									
+try {																									
+const data = await apiGet({																									
+action: "product",																									
+barcode: decodedText																									
+});																									
+																									
+if (!data || !data.success) {																									
+document.getElementById("productCard").style.display = "none";																									
+document.getElementById("storesCard").style.display = "none";																									
+statusEl.style.color = "#d32f2f";																									
+statusEl.textContent = "⚠️ " + (data && data.message ? data.message : "商品を確認できません") + "　読取番号：" + decodedText;																									
+return;																									
+}																									
+																									
+document.getElementById("productName").textContent = (data.model || "") + (data.color ? " / " + data.color : "");																									
+document.getElementById("productCode").textContent = data.productCode || "";																									
+document.getElementById("productBarcode").textContent = data.barcode || decodedText;																									
+document.getElementById("totalQty").textContent = data.totalQty || 0;																									
+document.getElementById("productCard").style.display = "block";																									
+																									
+const storesBody = document.getElementById("storesBody");																									
+storesBody.innerHTML = "";																									
+																									
+const stores = Array.isArray(data.stores) ? data.stores : [];																									
+stores.forEach(function(store) {																									
+const tr = document.createElement("tr");																									
+																									
+const tdNo = document.createElement("td");																									
+const tdName = document.createElement("td");																									
+const tdCode = document.createElement("td");																									
+const tdQty = document.createElement("td");																									
+																									
+tdNo.textContent = store.storeNo || "";																									
+tdName.textContent = store.storeName || "";																									
+tdCode.textContent = store.storeCode || "";																									
+tdQty.textContent = store.qty || "";																									
+tdQty.className = "qty";																									
+																									
+tr.appendChild(tdNo);																									
+tr.appendChild(tdName);																									
+tr.appendChild(tdCode);																									
+tr.appendChild(tdQty);																									
+																									
+storesBody.appendChild(tr);																									
+});																									
+																									
+document.getElementById("storesCard").style.display = "block";																									
+statusEl.style.color = "#2e7d32";																									
+statusEl.textContent = "✅ 商品と出荷データを確認しました";																									
+																									
+} catch (error) {																									
+statusEl.style.color = "#d32f2f";																									
+statusEl.textContent = "❌ 接続エラー：" + (error && error.message ? error.message : error);																									
+}																									
+}																									
+																									
+																									
+function onScanError(errorMessage) {																									
+// スキャン中の個別フレーム判定失敗は無視																									
+}																									
+																									
+																									
+async function stopScanner() {																									
+if (!html5QrCode) {																									
+running = false;																									
+document.getElementById("startBtn").style.display = "block";																									
+document.getElementById("stopBtn").style.display = "none";																									
+return;																									
+}																									
+																									
+try {																									
+if (running) {																									
+await html5QrCode.stop();																									
+}																									
+html5QrCode.clear();																									
+} catch (error) {																									
+console.error("Stop Error:", error);																									
+} finally {																									
+html5QrCode = null;																									
+running = false;																									
+document.getElementById("reader").innerHTML = "";																									
+document.getElementById("startBtn").style.display = "block";																									
+document.getElementById("stopBtn").style.display = "none";																									
 }																									
 }																									
 </script>																									
+																									
 </body>																									
 </html>																									
