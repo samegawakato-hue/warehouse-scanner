@@ -37,18 +37,42 @@ background: black;
 border-radius: 15px;																									
 }																									
 </style>																									
-																									
 </head>																									
 																									
 <body>																									
 																									
 <h1>カメラテスト</h1>																									
 																									
-<button onclick="startCamera()">																									
-📷 カメラを起動																									
-</button>																									
+<button																									
+onclick="																									
+document.getElementById('status').textContent='① ボタン反応OK';																									
 																									
-<div id="status">																									
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {																									
+document.getElementById('status').textContent='❌ カメラAPIが使えません';																									
+} else {																									
+document.getElementById('status').textContent='② カメラ許可を要求中';																									
+																									
+navigator.mediaDevices.getUserMedia({																									
+video: {																									
+facingMode: 'environment'																									
+},																									
+audio: false																									
+})																									
+.then(function(stream) {																									
+document.getElementById('video').srcObject = stream;																									
+document.getElementById('status').textContent='✅ カメラ起動成功';																									
+})																									
+.catch(function(error) {																									
+document.getElementById('status').textContent =																									
+❌ ' + error.name + ' : ' + error.message;																									
+});																									
+}																									
+"
+>
+📷 カメラを起動
+</button>
+
+<div id=status"">"																									
 待機中																									
 </div>																									
 																									
@@ -58,67 +82,6 @@ autoplay
 playsinline																									
 muted>																									
 </video>																									
-																									
-																									
-<script>																									
-																									
-function startCamera() {																									
-																									
-var status =																									
-document.getElementById("status");																									
-																									
-status.textContent =																									
-① ボタン反応OK;																									
-																									
-																									
-if (																									
-!navigator.mediaDevices ||																									
-!navigator.mediaDevices.getUserMedia																									
-) {																									
-																									
-status.textContent =																									
-❌ カメラAPIが使えません;																									
-																									
-return;																									
-}																									
-																									
-																									
-status.textContent =																									
-② カメラ許可を要求中;																									
-																									
-																									
-navigator.mediaDevices																									
-.getUserMedia({																									
-video: {																									
-facingMode: "environment"																									
-},																									
-audio: false																									
-})																									
-																									
-.then(function(stream) {																									
-																									
-document																									
-.getElementById("video")																									
-.srcObject = stream;																									
-																									
-status.textContent =																									
-✅ カメラ起動成功;																									
-																									
-})																									
-																									
-.catch(function(error) {																									
-																									
-status.textContent =																									
-❌  +																									
-error.name +																									
- :  +																									
-error.message;																									
-																									
-});																									
-																									
-}																									
-																									
-</script>																									
 																									
 </body>																									
 </html>																									
