@@ -25,7 +25,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- メイン3大ボタン -->																									
 <div class="btn-grid">																									
 <button id="btnOutItem" class="mode-btn active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
 <button id="btnOutStore" class="mode-btn" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
@@ -44,7 +43,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="status" class="status" style="display:none;"></div>																									
 </div>																									
 																									
-<!-- 出荷エリア -->																									
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
 <h3 id="itemTitle" style="margin:0;"></h3>																									
@@ -55,7 +53,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="storeList"></div>																									
 </div>																									
 																									
-<!-- 入荷手入力エリア -->																									
 <div id="inArea" class="card" style="display:none;">																									
 <h3>入荷登録</h3>																									
 <div id="inItemInfo" style="font-weight:bold; margin-bottom:10px;">商品をスキャンしてください</div>																									
@@ -67,8 +64,8 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// 写真に写っていたご自身のURLをセット済みです																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaK0arztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2QG5Y32w_3J/exec";																									
+// 指定いただいた最新のURLを設定済みです																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
 let currentMode = 'OUT_ITEM';																									
