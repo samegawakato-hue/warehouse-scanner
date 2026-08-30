@@ -1,9 +1,8 @@
-<!doctype html>																									
+<!DOCTYPE html>																									
 <html lang="ja">																									
 <head>																									
-<meta charset="utf-8">																									
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">																									
-																									
+<meta charset="UTF-8">																									
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">																									
 <title>倉庫バーコードスキャナー</title>																									
 																									
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>																									
@@ -12,75 +11,72 @@
 body {																									
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;																									
 margin: 0;																									
-background: #f5f6f8;																									
+background: #f4f5f7;																									
 color: #111;																									
 }																									
 																									
 .wrap {																									
-max-width: 760px;																									
-margin: auto;																									
-padding: 14px;																									
+max-width: 720px;																									
+margin: 0 auto;																									
+padding: 16px;																									
 }																									
 																									
 h1 {																									
 text-align: center;																									
 font-size: 24px;																									
-margin: 10px 0 16px;																									
 }																									
 																									
 .card {																									
-background: #fff;																									
+background: white;																									
 border-radius: 14px;																									
-padding: 14px;																									
+padding: 16px;																									
 margin-bottom: 14px;																									
-box-shadow: 0 1px 4px rgba(0,0,0,.08);																									
 }																									
 																									
 button {																									
 width: 100%;																									
 padding: 16px;																									
+margin-top: 10px;																									
 border: 0;																									
 border-radius: 10px;																									
 font-size: 18px;																									
-font-weight: 700;																									
-margin-top: 10px;																									
+font-weight: bold;																									
+cursor: pointer;																									
 }																									
 																									
-.blue {																									
+.start {																									
 background: #1976d2;																									
-color: #fff;																									
+color: white;																									
 }																									
 																									
-.gray {																									
+.stop {																									
 background: #555;																									
-color: #fff;																									
+color: white;																									
 }																									
 																									
 #reader {																									
 width: 100%;																									
-margin-top: 12px;																									
+margin-top: 14px;																									
 overflow: hidden;																									
-border-radius: 12px;																									
+border-radius: 8px;																									
 }																									
 																									
 #status {																									
-margin-top: 10px;																									
+margin-top: 12px;																									
 padding: 12px;																									
-background: #eef1f4;																									
 border-radius: 10px;																									
-font-size: 16px;																									
+background: #eef1f4;																									
+font-size: 15px;																									
+font-weight: bold;																									
+line-height: 1.4;																									
+word-break: break-all;																									
 }																									
 																									
 #result {																									
+margin-top: 12px;																									
 font-size: 28px;																									
 font-weight: 800;																									
 word-break: break-all;																									
-margin-top: 8px;																									
-}																									
-																									
-.hint {																									
-font-size: 15px;																									
-line-height: 1.5;																									
 }																									
 </style>																									
 </head>																									
@@ -93,13 +89,13 @@ line-height: 1.5;
 																									
 <div class="card">																									
 																									
-<button class="blue" onclick="startScanner()">																									
+<button id="startBtn" class="start" onclick="startScanner()">																									
 📷 バーコードをスキャン																									
 </button>																									
 																									
 <button																									
 id="stopBtn"																									
-class="gray"																									
+class="stop"																									
 style="display:none"																									
 onclick="stopScanner()">																									
 カメラを閉じる																									
@@ -108,177 +104,119 @@ onclick="stopScanner()">
 <div id="reader"></div>																									
 																									
 <div id="status">																									
-「バーコードをスキャン」を押してください。																									
+「バーコードをスキャン」を押してください																									
 </div>																									
 																									
 </div>																									
 																									
 <div class="card">																									
-																									
 <div>読み取り結果</div>																									
-																									
-<div id="result">																									
-未読取																									
+<div id="result">未読取</div>																									
 </div>																									
 																									
 </div>																									
-																									
-<div class="card hint">																									
-バーコード全体が横向きに入るように、																									
-スマホを商品から15〜30cmほど離してください。																									
-光が反射する袋の場合は、少し斜めから当ててください。																									
-</div>																									
-																									
-</div>																									
-																									
 																									
 <script>																									
-																									
 let scanner = null;																									
 let running = false;																									
 																									
-																									
 async function startScanner() {																									
-																									
 if (running) return;																									
 																									
-document.getElementById("status").textContent =																									
-カメラを起動しています…;																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#111";																									
+statusEl.textContent = "カメラを起動しています…";																									
 																									
 try {																									
-																									
-scanner = new Html5Qrcode(																									
-reader,																									
-{																									
+// スキャナーインスタンスの生成																									
+scanner = new Html5Qrcode("reader", {																									
 formatsToSupport: [																									
-																									
 Html5QrcodeSupportedFormats.UPC_A,																									
-																									
 Html5QrcodeSupportedFormats.UPC_E,																									
-																									
 Html5QrcodeSupportedFormats.EAN_13,																									
-																									
 Html5QrcodeSupportedFormats.EAN_8,																									
-																									
 Html5QrcodeSupportedFormats.CODE_128,																									
-																									
 Html5QrcodeSupportedFormats.CODE_39																									
-																									
 ],																									
-																									
 verbose: false																									
-}																									
-);																									
+});																									
 																									
-																									
+// 設定パラメータ（qrboxを固定値指定にしてエラーを回避）																									
 const config = {																									
-																									
 fps: 20,																									
-																									
 disableFlip: true,																									
-																									
-aspectRatio: 1.777778,																									
-																									
-qrbox: function(w, h) {																									
-																									
-return {																									
-																									
-width:																									
-Math.floor(w * 0.94),																									
-																									
-height:																									
-Math.max(																									
-110,																									
-Math.floor(h * 0.28)																									
-)																									
-																									
+qrbox: { width: 280, height: 120 }																									
 };																									
 																									
-}																									
-																									
-};																									
-																									
-																									
+// カメラ起動（背面カメラを指定）																									
 await scanner.start(																									
-																									
-{																									
-facingMode: "environment"																									
-},																									
-																									
+{ facingMode: "environment" },																									
 config,																									
-																									
-onSuccess,																									
-																									
-function() {}																									
-																									
+onScanSuccess,																									
+onScanError																									
 );																									
-																									
 																									
 running = true;																									
+document.getElementById("startBtn").style.display = "none";																									
+document.getElementById("stopBtn").style.display = "block";																									
+statusEl.textContent = "バーコードを横向きに、枠内に合わせてください";																									
 																									
+} catch (error) {																									
+console.error("Camera Start Error:", error);																									
+statusEl.style.color = "#d32f2f";																									
 																									
-document.getElementById("stopBtn").style.display =																									
-block;																									
+// エラーハンドリング																									
+let errorMessage = "カメラを起動できませんでした。";																									
+const errString = error.toString();																									
 																									
-																									
-document.getElementById("status").textContent =																									
-バーコードを横向きに、枠いっぱいに合わせてください。;																									
-																									
-																									
-} catch (e) {																									
-																									
-document.getElementById("status").textContent =																									
-カメラ起動エラー： + e;																									
-																									
+if (errString.includes("NotAllowedError") || errString.includes("PermissionDeniedError")) {																									
+errorMessage = "⚠️ カメラの利用権限が拒否されています。ブラウザの設定でカメラを許可してください。";																									
+} else if (errString.includes("NotFoundError") || errString.includes("DevicesNotFoundError")) {																									
+errorMessage = "⚠️ カメラが見つかりません。（背面カメラがない端末の可能性があります）";																									
+} else if (errString.includes("NotReadableError") || errString.includes("TrackStartError")) {																									
+errorMessage = "⚠️ カメラが他のアプリで使用されている可能性があります。";																									
+} else {																									
+errorMessage += ` (${error.name || error.message || error})`;																									
 }																									
 																									
+statusEl.textContent = errorMessage;																									
+running = false;																									
+}																									
 }																									
 																									
+async function onScanSuccess(decodedText) {																									
+document.getElementById("result").textContent = decodedText;																									
 																									
-async function onSuccess(text, decodedResult) {																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#2e7d32";																									
+statusEl.textContent = "✅ 読み取り成功";																									
 																									
-document.getElementById("result").textContent =																									
-text;																									
-																									
-																									
-document.getElementById("status").textContent =																									
-✅ 読み取り成功;																									
-																									
-																									
+// 振動フィードバック（対応端末のみ）																									
 if (navigator.vibrate) {																									
-																									
-navigator.vibrate(120);																									
-																									
+navigator.vibrate(150);																									
 }																									
-																									
 																									
 await stopScanner();																									
-																									
 }																									
 																									
+function onScanError(errorMessage) {																									
+// スキャン中のフレームごとの読み取り失敗ログ（通常は無視して問題ありません）																									
+}																									
 																									
 async function stopScanner() {																									
-																									
 if (!scanner || !running) return;																									
 																									
-																									
 try {																									
-																									
 await scanner.stop();																									
-																									
 scanner.clear();																									
-																									
-} catch (e) {}																									
-																									
-																									
-running = false;																									
-																									
-																									
-document.getElementById("stopBtn").style.display =																									
-none;																									
-																									
+} catch (error) {																									
+console.error("Stop Error:", error);																									
 }																									
 																									
+running = false;																									
+document.getElementById("startBtn").style.display = "block";																									
+document.getElementById("stopBtn").style.display = "none";																									
+}																									
 </script>																									
 																									
 </body>																									
