@@ -204,602 +204,206 @@ let callbackCounter = 0;
 																									
 function apiGet(params) {																									
 return new Promise(function(resolve, reject) {																									
+const callbackName = "gasCallback_" + Date.now() + "_" + callbackCounter++;																									
+const script = document.createElement("script");																									
 																									
-const callbackName =																									
-gasCallback_ +																									
-Date.now() +																									
-_ +																									
-callbackCounter++;																									
-																									
-const script =																									
-document.createElement("script");																									
-																									
-const timeout =																									
-setTimeout(function() {																									
-																									
+const timeout = setTimeout(function() {																									
 cleanup();																									
-																									
-reject(																									
-new Error(																									
-GASから応答がありません																									
-)																									
-);																									
-																									
+reject(new Error("GASから応答がありません"));																									
 }, 12000);																									
 																									
-																									
 function cleanup() {																									
-																									
 clearTimeout(timeout);																									
-																									
-try {																									
-delete window[callbackName];																									
-} catch (e) {}																									
-																									
+try { delete window[callbackName]; } catch (e) {}																									
 if (script.parentNode) {																									
 script.parentNode.removeChild(script);																									
 }																									
-																									
 }																									
 																									
-																									
-window[callbackName] =																									
-function(data) {																									
-																									
+window[callbackName] = function(data) {																									
 cleanup();																									
-																									
 resolve(data);																									
-																									
 };																									
 																									
-																									
-const query =																									
-new URLSearchParams();																									
-																									
-																									
-Object.keys(params)																									
-.forEach(function(key) {																									
-																									
-query.append(																									
-key,																									
-params[key]																									
-);																									
-																									
+const query = new URLSearchParams();																									
+Object.keys(params).forEach(function(key) {																									
+query.append(key, params[key]);																									
 });																									
+query.append("callback", callbackName);																									
 																									
-																									
-query.append(																									
-callback,																									
-callbackName																									
-);																									
-																									
-																									
-script.src =																									
-API_URL +																									
-? +																									
-query.toString();																									
-																									
-																									
-script.onerror =																									
-function() {																									
-																									
+script.src = API_URL + "?" + query.toString();																									
+script.onerror = function() {																									
 cleanup();																									
-																									
-reject(																									
-new Error(																									
-Googleスプレッドシートに接続できません																									
-)																									
-);																									
-																									
+reject(new Error("Googleスプレッドシートに接続できません"));																									
 };																									
 																									
-																									
-document.body																									
-.appendChild(script);																									
-																									
+document.body.appendChild(script);																									
 });																									
 }																									
 																									
 																									
 async function startScanner() {																									
-																									
 if (running) return;																									
 																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#111";																									
+statusEl.textContent = "カメラを起動しています…";																									
 																									
-const statusEl =																									
-document.getElementById("status");																									
-																									
-																									
-statusEl.style.color =																									
-#111;																									
-																									
-																									
-statusEl.textContent =																									
-カメラを起動しています…;																									
-																									
+// 起動前に念のため既存スキャナを停止・DOMリセット																									
+if (scanner) {																									
+await stopScanner();																									
+}																									
+document.getElementById("reader").innerHTML = "";																									
 																									
 try {																									
-																									
-scanner =																									
-new Html5Qrcode(																									
-reader,																									
-{																									
+scanner = new Html5Qrcode("reader", {																									
 formatsToSupport: [																									
-																									
 Html5QrcodeSupportedFormats.UPC_A,																									
-																									
 Html5QrcodeSupportedFormats.UPC_E,																									
-																									
 Html5QrcodeSupportedFormats.EAN_13,																									
-																									
 Html5QrcodeSupportedFormats.EAN_8,																									
-																									
 Html5QrcodeSupportedFormats.CODE_128,																									
-																									
 Html5QrcodeSupportedFormats.CODE_39																									
-																									
 ],																									
-																									
 verbose: false																									
-}																									
-);																									
-																									
+});																									
 																									
 const config = {																									
-																									
 fps: 20,																									
-																									
 disableFlip: true,																									
-																									
 qrbox: {																									
 width: 280,																									
 height: 120																									
 }																									
-																									
 };																									
 																									
-																									
 await scanner.start(																									
-																									
-{																									
-facingMode: "environment"																									
-},																									
-																									
+{ facingMode: "environment" },																									
 config,																									
-																									
 onScanSuccess,																									
-																									
 onScanError																									
-																									
 );																									
-																									
 																									
 running = true;																									
-																									
-																									
-document																									
-.getElementById(																									
-startBtn																									
-)																									
-.style.display =																									
-none;																									
-																									
-																									
-document																									
-.getElementById(																									
-stopBtn																									
-)																									
-.style.display =																									
-block;																									
-																									
-																									
-statusEl.textContent =																									
-バーコードを横向きに、枠内に合わせてください;																									
-																									
+document.getElementById("startBtn").style.display = "none";																									
+document.getElementById("stopBtn").style.display = "block";																									
+statusEl.textContent = "バーコードを横向きに、枠内に合わせてください";																									
 																									
 } catch (error) {																									
+console.error("Camera Start Error:", error);																									
+statusEl.style.color = "#d32f2f";																									
 																									
-console.error(																									
-Camera Start Error:,																									
-error																									
-);																									
+let errorMessage = "カメラを起動できませんでした。";																									
+const errString = error.toString();																									
 																									
-																									
-statusEl.style.color =																									
-#d32f2f;																									
-																									
-																									
-let errorMessage =																									
-カメラを起動できませんでした。;																									
-																									
-																									
-const errString =																									
-error.toString();																									
-																									
-																									
-if (																									
-errString.includes("NotAllowedError") ||																									
-errString.includes("PermissionDeniedError")																									
-) {																									
-																									
-errorMessage =																									
-⚠️ カメラの利用権限が拒否されています。;																									
-																									
-} else if (																									
-errString.includes("NotFoundError") ||																									
-errString.includes("DevicesNotFoundError")																									
-) {																									
-																									
-errorMessage =																									
-⚠️ カメラが見つかりません。;																									
-																									
-} else if (																									
-errString.includes("NotReadableError") ||																									
-errString.includes("TrackStartError")																									
-) {																									
-																									
-errorMessage =																									
-⚠️ カメラが他のアプリで使用されている可能性があります。;																									
-																									
+if (errString.includes("NotAllowedError") || errString.includes("PermissionDeniedError")) {																									
+errorMessage = "⚠️ カメラの利用権限が拒否されています。";																									
+} else if (errString.includes("NotFoundError") || errString.includes("DevicesNotFoundError")) {																									
+errorMessage = "⚠️ カメラが見つかりません。";																									
+} else if (errString.includes("NotReadableError") || errString.includes("TrackStartError")) {																									
+errorMessage = "⚠️ カメラが他のアプリで使用されている可能性があります。";																									
 } else {																									
-																									
-errorMessage +=																									
- ( +																									
-(																									
-error.name ||																									
-error.message ||																									
-error																									
-) +																									
-);																									
-																									
+errorMessage += " (" + (error.name || error.message || error) + ")";																									
 }																									
 																									
-																									
-statusEl.textContent =																									
-errorMessage;																									
-																									
-																									
+statusEl.textContent = errorMessage;																									
 running = false;																									
-																									
+scanner = null;																									
+}																									
 }																									
 																									
-}																									
 																									
+async function onScanSuccess(decodedText) {																									
+document.getElementById("result").textContent = decodedText;																									
 																									
-async function onScanSuccess(																									
-decodedText																									
-) {																									
-																									
-document																									
-.getElementById(																									
-result																									
-)																									
-.textContent =																									
-decodedText;																									
-																									
-																									
-const statusEl =																									
-document																									
-.getElementById(																									
-status																									
-);																									
-																									
-																									
-statusEl.style.color =																									
-#2e7d32;																									
-																									
-																									
-statusEl.textContent =																									
-✅ バーコード読み取り成功。商品を検索しています…;																									
-																									
+const statusEl = document.getElementById("status");																									
+statusEl.style.color = "#2e7d32";																									
+statusEl.textContent = "✅ バーコード読み取り成功。商品を検索しています…";																									
 																									
 if (navigator.vibrate) {																									
-																									
 navigator.vibrate(150);																									
-																									
 }																									
-																									
 																									
 await stopScanner();																									
 																									
-																									
 try {																									
-																									
-const data =																									
-await apiGet({																									
-																									
+const data = await apiGet({																									
 action: "product",																									
-																									
-barcode:																									
-decodedText																									
-																									
+barcode: decodedText																									
 });																									
 																									
-																									
-if (																									
-!data ||																									
-!data.success																									
-) {																									
-																									
-document																									
-.getElementById(																									
-productCard																									
-)																									
-.style.display =																									
-none;																									
-																									
-																									
-document																									
-.getElementById(																									
-storesCard																									
-)																									
-.style.display =																									
-none;																									
-																									
-																									
-statusEl.style.color =																									
-#d32f2f;																									
-																									
-																									
-statusEl.textContent =																									
-⚠️  +																									
-(																									
-data &&																									
-data.message																									
-? data.message																									
-: "商品を確認できません"																									
-) +																									
-　読取番号： +																									
-decodedText;																									
-																									
-																									
+if (!data || !data.success) {																									
+document.getElementById("productCard").style.display = "none";																									
+document.getElementById("storesCard").style.display = "none";																									
+statusEl.style.color = "#d32f2f";																									
+statusEl.textContent = "⚠️ " + (data && data.message ? data.message : "商品を確認できません") + "　読取番号：" + decodedText;																									
 return;																									
-																									
 }																									
 																									
+document.getElementById("productName").textContent = (data.model || "") + (data.color ? " / " + data.color : "");																									
+document.getElementById("productCode").textContent = data.productCode || "";																									
+document.getElementById("productBarcode").textContent = data.barcode || decodedText;																									
+document.getElementById("totalQty").textContent = data.totalQty || 0;																									
+document.getElementById("productCard").style.display = "block";																									
 																									
-document																									
-.getElementById(																									
-productName																									
-)																									
-.textContent =																									
+const storesBody = document.getElementById("storesBody");																									
+storesBody.innerHTML = "";																									
 																									
-(data.model || "") +																									
+const stores = Array.isArray(data.stores) ? data.stores : [];																									
+stores.forEach(function(store) {																									
+const tr = document.createElement("tr");																									
+const tdNo = document.createElement("td");																									
+const tdName = document.createElement("td");																									
+const tdCode = document.createElement("td");																									
+const tdQty = document.createElement("td");																									
 																									
-(																									
-data.color																									
-? " / " + data.color																									
-: ""																									
-);																									
+tdNo.textContent = store.storeNo || "";																									
+tdName.textContent = store.storeName || "";																									
+tdCode.textContent = store.storeCode || "";																									
+tdQty.textContent = store.qty || "";																									
+tdQty.className = "qty";																									
 																									
+tr.appendChild(tdNo);																									
+tr.appendChild(tdName);																									
+tr.appendChild(tdCode);																									
+tr.appendChild(tdQty);																									
+storesBody.appendChild(tr);																									
+});																									
 																									
-document																									
-.getElementById(																									
-productCode																									
-)																									
-.textContent =																									
-data.productCode || "";																									
-																									
-																									
-document																									
-.getElementById(																									
-productBarcode																									
-)																									
-.textContent =																									
-data.barcode ||																									
-decodedText;																									
-																									
-																									
-document																									
-.getElementById(																									
-totalQty																									
-)																									
-.textContent =																									
-data.totalQty || 0;																									
-																									
-																									
-document																									
-.getElementById(																									
-productCard																									
-)																									
-.style.display =																									
-block;																									
-																									
-																									
-const storesBody =																									
-document																									
-.getElementById(																									
-storesBody																									
-);																									
-																									
-																									
-storesBody.innerHTML =																									
-;																									
-																									
-																									
-const stores =																									
-Array.isArray(																									
-data.stores																									
-)																									
-? data.stores																									
-: [];																									
-																									
-																									
-stores.forEach(																									
-function(store) {																									
-																									
-const tr =																									
-document																									
-.createElement(																									
-tr																									
-);																									
-																									
-																									
-const tdNo =																									
-document																									
-.createElement(																									
-td																									
-);																									
-																									
-																									
-const tdName =																									
-document																									
-.createElement(																									
-td																									
-);																									
-																									
-																									
-const tdCode =																									
-document																									
-.createElement(																									
-td																									
-);																									
-																									
-																									
-const tdQty =																									
-document																									
-.createElement(																									
-td																									
-);																									
-																									
-																									
-tdNo.textContent =																									
-store.storeNo || "";																									
-																									
-																									
-tdName.textContent =																									
-store.storeName || "";																									
-																									
-																									
-tdCode.textContent =																									
-store.storeCode || "";																									
-																									
-																									
-tdQty.textContent =																									
-store.qty || "";																									
-																									
-																									
-tdQty.className =																									
-qty;																									
-																									
-																									
-tr.appendChild(																									
-tdNo																									
-);																									
-																									
-tr.appendChild(																									
-tdName																									
-);																									
-																									
-tr.appendChild(																									
-tdCode																									
-);																									
-																									
-tr.appendChild(																									
-tdQty																									
-);																									
-																									
-																									
-storesBody																									
-.appendChild(																									
-tr																									
-);																									
-																									
-}																									
-);																									
-																									
-																									
-document																									
-.getElementById(																									
-storesCard																									
-)																									
-.style.display =																									
-block;																									
-																									
-																									
-statusEl.style.color =																									
-#2e7d32;																									
-																									
-																									
-statusEl.textContent =																									
-✅ 商品と出荷データを確認しました;																									
-																									
+document.getElementById("storesCard").style.display = "block";																									
+statusEl.style.color = "#2e7d32";																									
+statusEl.textContent = "✅ 商品と出荷データを確認しました";																									
 																									
 } catch (error) {																									
-																									
-statusEl.style.color =																									
-#d32f2f;																									
-																									
-																									
-statusEl.textContent =																									
-❌ 接続エラー： +																									
-(																									
-error &&																									
-error.message																									
-? error.message																									
-: error																									
-);																									
-																									
+statusEl.style.color = "#d32f2f";																									
+statusEl.textContent = "❌ 接続エラー：" + (error && error.message ? error.message : error);																									
 }																									
-																									
 }																									
 																									
 																									
-function onScanError(																									
-errorMessage																									
-) {																									
-																									
+function onScanError(errorMessage) {																									
 // 読み取り途中の失敗は無視																									
-																									
 }																									
 																									
 																									
 async function stopScanner() {																									
-																									
-if (																									
-!scanner ||																									
-!running																									
-) {																									
-return;																									
-}																									
-																									
+if (!scanner) return;																									
 																									
 try {																									
-																									
+if (running) {																									
 await scanner.stop();																									
-																									
+}																									
 scanner.clear();																									
-																									
 } catch (error) {																									
-																									
-console.error(																									
-Stop Error:,																									
-error																									
-);																									
-																									
-}																									
-																									
-																									
+console.error("Stop Error:", error);																									
+} finally {																									
+scanner = null;																									
 running = false;																									
-																									
-																									
-document																									
-.getElementById(																									
-startBtn																									
-)																									
-.style.display =																									
-block;																									
-																									
-																									
-document																									
-.getElementById(																									
-stopBtn																									
-)																									
-.style.display =																									
-none;																									
-																									
+document.getElementById("reader").innerHTML = "";																									
+document.getElementById("startBtn").style.display = "block";																									
+document.getElementById("stopBtn").style.display = "none";																									
 }																									
-																									
+}																									
 </script>																									
 																									
 </body>																									
