@@ -2,199 +2,119 @@
 <html lang="ja">																									
 <head>																									
 <meta charset="UTF-8">																									
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">																									
+<meta name="viewport" content="width=device-width, initial-scale=1">																									
 																									
 <title>倉庫バーコードスキャナー</title>																									
 																									
-<script src="https://unpkg.com/html5-qrcode"></script>																									
-																									
 <style>																									
 body {																									
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;																									
+font-family: -apple-system, BlinkMacSystemFont, sans-serif;																									
 margin: 0;																									
 background: #f4f5f7;																									
-color: #111;																									
-}																									
-																									
-.wrap {																									
-max-width: 720px;																									
-margin: 0 auto;																									
-padding: 16px;																									
+padding: 25px;																									
 }																									
 																									
 h1 {																									
-font-size: 24px;																									
+font-size: 28px;																									
 text-align: center;																									
-margin: 12px 0 18px;																									
 }																									
 																									
-.card {																									
-background: #fff;																									
-border-radius: 14px;																									
-padding: 16px;																									
-margin-bottom: 14px;																									
-box-shadow: 0 1px 3px rgba(0,0,0,.08);																									
-}																									
-																									
-button {																									
+.cameraButton {																									
+display: block;																									
 width: 100%;																									
 box-sizing: border-box;																									
-padding: 16px;																									
-margin-top: 10px;																									
-border: 0;																									
-border-radius: 10px;																									
-font-size: 18px;																									
-font-weight: 700;																									
-}																									
+padding: 22px;																									
+margin-top: 30px;																									
 																									
-.primary {																									
 background: #1976d2;																									
-color: #fff;																									
+color: white;																									
+																									
+border-radius: 14px;																									
+																									
+font-size: 22px;																									
+font-weight: bold;																									
+text-align: center;																									
+																									
+cursor: pointer;																									
 }																									
 																									
-.secondary {																									
-background: #555;																									
-color: #fff;																									
-}																									
-																									
-#reader {																									
-width: 100%;																									
-margin-top: 14px;																									
-overflow: hidden;																									
-border-radius: 12px;																									
-}																									
-																									
-#result {																									
-font-size: 26px;																									
-font-weight: 800;																									
-word-break: break-all;																									
-margin-top: 10px;																									
+#cameraInput {																									
+display: none;																									
 }																									
 																									
 #status {																									
-margin-top: 10px;																									
-padding: 12px;																									
-border-radius: 10px;																									
-background: #eef1f4;																									
-font-size: 16px;																									
+margin-top: 25px;																									
+padding: 18px;																									
+background: white;																									
+border-radius: 12px;																									
+																									
+font-size: 20px;																									
+font-weight: bold;																									
+}																									
+																									
+#preview {																									
+width: 100%;																									
+margin-top: 20px;																									
+border-radius: 12px;																									
+display: none;																									
 }																									
 </style>																									
 </head>																									
 																									
 <body>																									
 																									
-<div class="wrap">																									
-																									
 <h1>倉庫バーコードスキャナー</h1>																									
 																									
-<div class="card">																									
+<label class="cameraButton" for="cameraInput">																									
+📷 バーコードを撮影																									
+</label>																									
 																									
-<button class="primary" onclick="startScanner()">																									
-📷 バーコードをスキャン																									
-</button>																									
-																									
-<button																									
-id="stopBtn"																									
-class="secondary"																									
-style="display:none"																									
-onclick="stopScanner()">																									
-カメラを閉じる																									
-</button>																									
-																									
-<div id="reader"></div>																									
+<input																									
+id="cameraInput"																									
+type="file"																									
+accept="image/*"																									
+capture="environment"																									
+>																									
 																									
 <div id="status">																									
-「バーコードをスキャン」を押してください。																									
+バーコードを撮影してください																									
 </div>																									
 																									
-</div>																									
-																									
-<div class="card">																									
-<div>読み取り結果</div>																									
-<div id="result">未読取</div>																									
-</div>																									
-																									
-</div>																									
+<img id="preview">																									
 																									
 <script>																									
 																									
-let scanner = null;																									
-let running = false;																									
+const input =																									
+document.getElementById("cameraInput");																									
 																									
-async function startScanner() {																									
+const preview =																									
+document.getElementById("preview");																									
 																									
-if (running) return;																									
+const status =																									
+document.getElementById("status");																									
 																									
-document.getElementById("status").textContent =																									
-カメラを起動しています…;																									
 																									
-try {																									
+input.addEventListener("change", function() {																									
 																									
-scanner = new Html5Qrcode("reader");																									
-																									
-const config = {																									
-fps: 12,																									
-qrbox: function(viewfinderWidth, viewfinderHeight) {																									
-return {																									
-width: Math.floor(viewfinderWidth * 0.9),																									
-height: Math.floor(viewfinderHeight * 0.35)																									
-};																									
-},																									
-aspectRatio: 1.777778																									
-};																									
-																									
-await scanner.start(																									
-{ facingMode: "environment" },																									
-config,																									
-onScanSuccess,																									
-function() {}																									
-);																									
-																									
-running = true;																									
-																									
-document.getElementById("stopBtn").style.display = "block";																									
-																									
-document.getElementById("status").textContent =																									
-商品のバーコードを枠内に合わせてください。;																									
-																									
-} catch (e) {																									
-																									
-document.getElementById("status").textContent =																									
-カメラ起動エラー： + e;																									
-																									
-}																									
+if (!input.files || !input.files[0]) {																									
+return;																									
 }																									
 																									
-async function stopScanner() {																									
+const file =																									
+input.files[0];																									
 																									
-if (!scanner || !running) return;																									
+const url =																									
+URL.createObjectURL(file);																									
 																									
-try {																									
-await scanner.stop();																									
-scanner.clear();																									
-} catch (e) {}																									
+preview.src = url;																									
 																									
-running = false;																									
+preview.style.display =																									
+block;																									
 																									
-document.getElementById("stopBtn").style.display = "none";																									
+status.textContent =																									
+✅ カメラ撮影成功;																									
 																									
-document.getElementById("status").textContent =																									
-カメラを停止しました。;																									
-}																									
-																									
-async function onScanSuccess(decodedText) {																									
-																									
-document.getElementById("result").textContent = decodedText;																									
-																									
-document.getElementById("status").textContent =																									
-✅ 読み取り成功;																									
-																									
-if (navigator.vibrate) {																									
-navigator.vibrate(120);																									
-}																									
-																									
-await stopScanner();																									
-}																									
+});																									
 																									
 </script>																									
 																									
