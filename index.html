@@ -4,11 +4,11 @@
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1">																									
 																									
-<title>ボタンテスト</title>																									
+<title>カメラテスト</title>																									
 																									
 <style>																									
 body {																									
-font-family: sans-serif;																									
+font-family: -apple-system, BlinkMacSystemFont, sans-serif;																									
 padding: 30px;																									
 }																									
 																									
@@ -25,29 +25,103 @@ border-radius: 15px;
 #status {																									
 margin-top: 30px;																									
 padding: 20px;																									
-font-size: 24px;																									
+font-size: 22px;																									
 font-weight: bold;																									
 background: #eee;																									
+}																									
+																									
+video {																									
+width: 100%;																									
+margin-top: 20px;																									
+background: black;																									
+border-radius: 15px;																									
 }																									
 </style>																									
 </head>																									
 																									
 <body>																									
 																									
-<h1>ボタンテスト</h1>																									
+<h1>カメラテスト</h1>																									
 																									
-<button id="testButton">																									
-押してください																									
+<button id="cameraButton">																									
+📷 カメラを起動																									
 </button>																									
 																									
 <div id="status">																									
 待機中																									
 </div>																									
 																									
+<video																									
+id="video"																									
+autoplay																									
+playsinline																									
+muted>																									
+</video>																									
+																									
 <script>																									
-document.getElementById("testButton").addEventListener("click", function() {																									
-document.getElementById("status").textContent = "成功！ボタンが動いています";																									
+																									
+const button =																									
+document.getElementById("cameraButton");																									
+																									
+const status =																									
+document.getElementById("status");																									
+																									
+const video =																									
+document.getElementById("video");																									
+																									
+																									
+button.addEventListener(																									
+click,																									
+async function() {																									
+																									
+status.textContent =																									
+① ボタン反応OK;																									
+																									
+try {																									
+																									
+if (																									
+!navigator.mediaDevices ||																									
+!navigator.mediaDevices.getUserMedia																									
+) {																									
+																									
+status.textContent =																									
+❌ カメラAPIが使えません;																									
+																									
+return;																									
+}																									
+																									
+status.textContent =																									
+② カメラ許可を要求中;																									
+																									
+const stream =																									
+await navigator.mediaDevices.getUserMedia({																									
+video: {																									
+facingMode: {																									
+ideal: "environment"																									
+}																									
+},																									
+audio: false																									
 });																									
+																									
+video.srcObject =																									
+stream;																									
+																									
+status.textContent =																									
+✅ カメラ起動成功;																									
+																									
+} catch (error) {																									
+																									
+status.textContent =																									
+❌  +																									
+error.name +																									
+ :  +																									
+error.message;																									
+																									
+}																									
+																									
+}																									
+);																									
+																									
 </script>																									
 																									
 </body>																									
