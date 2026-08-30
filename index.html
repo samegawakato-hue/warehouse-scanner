@@ -3,7 +3,7 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">																									
-<title>倉庫バーコードスキャナー</title>																									
+<title>店舗別ピッキング</title>																									
 																									
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>																									
 																									
@@ -78,6 +78,48 @@ font-size: 28px;
 font-weight: 800;																									
 word-break: break-all;																									
 }																									
+																									
+.product-name {																									
+font-size: 28px;																									
+font-weight: 800;																									
+margin-bottom: 10px;																									
+}																									
+																									
+.total-label {																									
+text-align: center;																									
+margin-top: 18px;																									
+font-weight: bold;																									
+}																									
+																									
+.total-qty {																									
+font-size: 48px;																									
+font-weight: 900;																									
+text-align: center;																									
+margin: 6px 0 12px;																									
+}																									
+																									
+table {																									
+width: 100%;																									
+border-collapse: collapse;																									
+margin-top: 10px;																									
+}																									
+																									
+th,																									
+td {																									
+padding: 10px 5px;																									
+border-bottom: 1px solid #ddd;																									
+text-align: left;																									
+}																									
+																									
+th:last-child,																									
+td:last-child {																									
+text-align: center;																									
+}																									
+																									
+.qty {																									
+font-size: 22px;																									
+font-weight: 800;																									
+}																									
 </style>																									
 </head>																									
 																									
@@ -85,12 +127,12 @@ word-break: break-all;
 																									
 <div class="wrap">																									
 																									
-<h1>倉庫バーコードスキャナー</h1>																									
+<h1>店舗別ピッキング</h1>																									
 																									
 <div class="card">																									
 																									
 <button id="startBtn" class="start" onclick="startScanner()">																									
-📷 バーコードをスキャン																									
+📷 商品バーコードをスキャン																									
 </button>																									
 																									
 <button																									
@@ -104,7 +146,7 @@ onclick="stopScanner()">
 <div id="reader"></div>																									
 																									
 <div id="status">																									
-「バーコードをスキャン」を押してください																									
+「商品バーコードをスキャン」を押してください																									
 </div>																									
 																									
 </div>																									
@@ -114,109 +156,650 @@ onclick="stopScanner()">
 <div id="result">未読取</div>																									
 </div>																									
 																									
+<div id="productCard" class="card" style="display:none;">																									
+<div id="productName" class="product-name"></div>																									
+																									
+<div>																									
+商品コード：																									
+<strong id="productCode"></strong>																									
+</div>																									
+																									
+<div>																									
+実物バーコード：																									
+<strong id="productBarcode"></strong>																									
+</div>																									
+																									
+<div class="total-label">本日の出荷合計</div>																									
+																									
+<div id="totalQty" class="total-qty">0</div>																									
+</div>																									
+																									
+<div id="storesCard" class="card" style="display:none;">																									
+<h2>出荷店舗</h2>																									
+																									
+<table>																									
+<thead>																									
+<tr>																									
+<th>No</th>																									
+<th>店舗</th>																									
+<th>店番</th>																									
+<th>数量</th>																									
+</tr>																									
+</thead>																									
+																									
+<tbody id="storesBody"></tbody>																									
+</table>																									
+</div>																									
+																									
 </div>																									
 																									
 <script>																									
+const API_URL =																									
+https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec;																									
+																									
 let scanner = null;																									
 let running = false;																									
+let callbackCounter = 0;																									
 																									
-async function startScanner() {																									
-if (running) return;																									
 																									
-const statusEl = document.getElementById("status");																									
-statusEl.style.color = "#111";																									
-statusEl.textContent = "カメラを起動しています…";																									
+function apiGet(params) {																									
+return new Promise(function(resolve, reject) {																									
 																									
-try {																									
-// スキャナーインスタンスの生成																									
-scanner = new Html5Qrcode("reader", {																									
-formatsToSupport: [																									
-Html5QrcodeSupportedFormats.UPC_A,																									
-Html5QrcodeSupportedFormats.UPC_E,																									
-Html5QrcodeSupportedFormats.EAN_13,																									
-Html5QrcodeSupportedFormats.EAN_8,																									
-Html5QrcodeSupportedFormats.CODE_128,																									
-Html5QrcodeSupportedFormats.CODE_39																									
-],																									
-verbose: false																									
-});																									
+const callbackName =																									
+gasCallback_ +																									
+Date.now() +																									
+_ +																									
+callbackCounter++;																									
 																									
-// 設定パラメータ（qrboxを固定値指定にしてエラーを回避）																									
-const config = {																									
-fps: 20,																									
-disableFlip: true,																									
-qrbox: { width: 280, height: 120 }																									
-};																									
+const script =																									
+document.createElement("script");																									
 																									
-// カメラ起動（背面カメラを指定）																									
-await scanner.start(																									
-{ facingMode: "environment" },																									
-config,																									
-onScanSuccess,																									
-onScanError																									
+const timeout =																									
+setTimeout(function() {																									
+																									
+cleanup();																									
+																									
+reject(																									
+new Error(																									
+GASから応答がありません																									
+)																									
 );																									
 																									
-running = true;																									
-document.getElementById("startBtn").style.display = "none";																									
-document.getElementById("stopBtn").style.display = "block";																									
-statusEl.textContent = "バーコードを横向きに、枠内に合わせてください";																									
+}, 12000);																									
 																									
-} catch (error) {																									
-console.error("Camera Start Error:", error);																									
-statusEl.style.color = "#d32f2f";																									
 																									
-// エラーハンドリング																									
-let errorMessage = "カメラを起動できませんでした。";																									
-const errString = error.toString();																									
+function cleanup() {																									
 																									
-if (errString.includes("NotAllowedError") || errString.includes("PermissionDeniedError")) {																									
-errorMessage = "⚠️ カメラの利用権限が拒否されています。ブラウザの設定でカメラを許可してください。";																									
-} else if (errString.includes("NotFoundError") || errString.includes("DevicesNotFoundError")) {																									
-errorMessage = "⚠️ カメラが見つかりません。（背面カメラがない端末の可能性があります）";																									
-} else if (errString.includes("NotReadableError") || errString.includes("TrackStartError")) {																									
-errorMessage = "⚠️ カメラが他のアプリで使用されている可能性があります。";																									
-} else {																									
-errorMessage += ` (${error.name || error.message || error})`;																									
-}																									
-																									
-statusEl.textContent = errorMessage;																									
-running = false;																									
-}																									
-}																									
-																									
-async function onScanSuccess(decodedText) {																									
-document.getElementById("result").textContent = decodedText;																									
-																									
-const statusEl = document.getElementById("status");																									
-statusEl.style.color = "#2e7d32";																									
-statusEl.textContent = "✅ 読み取り成功";																									
-																									
-// 振動フィードバック（対応端末のみ）																									
-if (navigator.vibrate) {																									
-navigator.vibrate(150);																									
-}																									
-																									
-await stopScanner();																									
-}																									
-																									
-function onScanError(errorMessage) {																									
-// スキャン中のフレームごとの読み取り失敗ログ（通常は無視して問題ありません）																									
-}																									
-																									
-async function stopScanner() {																									
-if (!scanner || !running) return;																									
+clearTimeout(timeout);																									
 																									
 try {																									
-await scanner.stop();																									
-scanner.clear();																									
-} catch (error) {																									
-console.error("Stop Error:", error);																									
+delete window[callbackName];																									
+} catch (e) {}																									
+																									
+if (script.parentNode) {																									
+script.parentNode.removeChild(script);																									
 }																									
 																									
-running = false;																									
-document.getElementById("startBtn").style.display = "block";																									
-document.getElementById("stopBtn").style.display = "none";																									
 }																									
+																									
+																									
+window[callbackName] =																									
+function(data) {																									
+																									
+cleanup();																									
+																									
+resolve(data);																									
+																									
+};																									
+																									
+																									
+const query =																									
+new URLSearchParams();																									
+																									
+																									
+Object.keys(params)																									
+.forEach(function(key) {																									
+																									
+query.append(																									
+key,																									
+params[key]																									
+);																									
+																									
+});																									
+																									
+																									
+query.append(																									
+callback,																									
+callbackName																									
+);																									
+																									
+																									
+script.src =																									
+API_URL +																									
+? +																									
+query.toString();																									
+																									
+																									
+script.onerror =																									
+function() {																									
+																									
+cleanup();																									
+																									
+reject(																									
+new Error(																									
+Googleスプレッドシートに接続できません																									
+)																									
+);																									
+																									
+};																									
+																									
+																									
+document.body																									
+.appendChild(script);																									
+																									
+});																									
+}																									
+																									
+																									
+async function startScanner() {																									
+																									
+if (running) return;																									
+																									
+																									
+const statusEl =																									
+document.getElementById("status");																									
+																									
+																									
+statusEl.style.color =																									
+#111;																									
+																									
+																									
+statusEl.textContent =																									
+カメラを起動しています…;																									
+																									
+																									
+try {																									
+																									
+scanner =																									
+new Html5Qrcode(																									
+reader,																									
+{																									
+formatsToSupport: [																									
+																									
+Html5QrcodeSupportedFormats.UPC_A,																									
+																									
+Html5QrcodeSupportedFormats.UPC_E,																									
+																									
+Html5QrcodeSupportedFormats.EAN_13,																									
+																									
+Html5QrcodeSupportedFormats.EAN_8,																									
+																									
+Html5QrcodeSupportedFormats.CODE_128,																									
+																									
+Html5QrcodeSupportedFormats.CODE_39																									
+																									
+],																									
+																									
+verbose: false																									
+}																									
+);																									
+																									
+																									
+const config = {																									
+																									
+fps: 20,																									
+																									
+disableFlip: true,																									
+																									
+qrbox: {																									
+width: 280,																									
+height: 120																									
+}																									
+																									
+};																									
+																									
+																									
+await scanner.start(																									
+																									
+{																									
+facingMode: "environment"																									
+},																									
+																									
+config,																									
+																									
+onScanSuccess,																									
+																									
+onScanError																									
+																									
+);																									
+																									
+																									
+running = true;																									
+																									
+																									
+document																									
+.getElementById(																									
+startBtn																									
+)																									
+.style.display =																									
+none;																									
+																									
+																									
+document																									
+.getElementById(																									
+stopBtn																									
+)																									
+.style.display =																									
+block;																									
+																									
+																									
+statusEl.textContent =																									
+バーコードを横向きに、枠内に合わせてください;																									
+																									
+																									
+} catch (error) {																									
+																									
+console.error(																									
+Camera Start Error:,																									
+error																									
+);																									
+																									
+																									
+statusEl.style.color =																									
+#d32f2f;																									
+																									
+																									
+let errorMessage =																									
+カメラを起動できませんでした。;																									
+																									
+																									
+const errString =																									
+error.toString();																									
+																									
+																									
+if (																									
+errString.includes("NotAllowedError") ||																									
+errString.includes("PermissionDeniedError")																									
+) {																									
+																									
+errorMessage =																									
+⚠️ カメラの利用権限が拒否されています。;																									
+																									
+} else if (																									
+errString.includes("NotFoundError") ||																									
+errString.includes("DevicesNotFoundError")																									
+) {																									
+																									
+errorMessage =																									
+⚠️ カメラが見つかりません。;																									
+																									
+} else if (																									
+errString.includes("NotReadableError") ||																									
+errString.includes("TrackStartError")																									
+) {																									
+																									
+errorMessage =																									
+⚠️ カメラが他のアプリで使用されている可能性があります。;																									
+																									
+} else {																									
+																									
+errorMessage +=																									
+ ( +																									
+(																									
+error.name ||																									
+error.message ||																									
+error																									
+) +																									
+);																									
+																									
+}																									
+																									
+																									
+statusEl.textContent =																									
+errorMessage;																									
+																									
+																									
+running = false;																									
+																									
+}																									
+																									
+}																									
+																									
+																									
+async function onScanSuccess(																									
+decodedText																									
+) {																									
+																									
+document																									
+.getElementById(																									
+result																									
+)																									
+.textContent =																									
+decodedText;																									
+																									
+																									
+const statusEl =																									
+document																									
+.getElementById(																									
+status																									
+);																									
+																									
+																									
+statusEl.style.color =																									
+#2e7d32;																									
+																									
+																									
+statusEl.textContent =																									
+✅ バーコード読み取り成功。商品を検索しています…;																									
+																									
+																									
+if (navigator.vibrate) {																									
+																									
+navigator.vibrate(150);																									
+																									
+}																									
+																									
+																									
+await stopScanner();																									
+																									
+																									
+try {																									
+																									
+const data =																									
+await apiGet({																									
+																									
+action: "product",																									
+																									
+barcode:																									
+decodedText																									
+																									
+});																									
+																									
+																									
+if (																									
+!data ||																									
+!data.success																									
+) {																									
+																									
+document																									
+.getElementById(																									
+productCard																									
+)																									
+.style.display =																									
+none;																									
+																									
+																									
+document																									
+.getElementById(																									
+storesCard																									
+)																									
+.style.display =																									
+none;																									
+																									
+																									
+statusEl.style.color =																									
+#d32f2f;																									
+																									
+																									
+statusEl.textContent =																									
+⚠️  +																									
+(																									
+data &&																									
+data.message																									
+? data.message																									
+: "商品を確認できません"																									
+) +																									
+　読取番号： +																									
+decodedText;																									
+																									
+																									
+return;																									
+																									
+}																									
+																									
+																									
+document																									
+.getElementById(																									
+productName																									
+)																									
+.textContent =																									
+																									
+(data.model || "") +																									
+																									
+(																									
+data.color																									
+? " / " + data.color																									
+: ""																									
+);																									
+																									
+																									
+document																									
+.getElementById(																									
+productCode																									
+)																									
+.textContent =																									
+data.productCode || "";																									
+																									
+																									
+document																									
+.getElementById(																									
+productBarcode																									
+)																									
+.textContent =																									
+data.barcode ||																									
+decodedText;																									
+																									
+																									
+document																									
+.getElementById(																									
+totalQty																									
+)																									
+.textContent =																									
+data.totalQty || 0;																									
+																									
+																									
+document																									
+.getElementById(																									
+productCard																									
+)																									
+.style.display =																									
+block;																									
+																									
+																									
+const storesBody =																									
+document																									
+.getElementById(																									
+storesBody																									
+);																									
+																									
+																									
+storesBody.innerHTML =																									
+;																									
+																									
+																									
+const stores =																									
+Array.isArray(																									
+data.stores																									
+)																									
+? data.stores																									
+: [];																									
+																									
+																									
+stores.forEach(																									
+function(store) {																									
+																									
+const tr =																									
+document																									
+.createElement(																									
+tr																									
+);																									
+																									
+																									
+const tdNo =																									
+document																									
+.createElement(																									
+td																									
+);																									
+																									
+																									
+const tdName =																									
+document																									
+.createElement(																									
+td																									
+);																									
+																									
+																									
+const tdCode =																									
+document																									
+.createElement(																									
+td																									
+);																									
+																									
+																									
+const tdQty =																									
+document																									
+.createElement(																									
+td																									
+);																									
+																									
+																									
+tdNo.textContent =																									
+store.storeNo || "";																									
+																									
+																									
+tdName.textContent =																									
+store.storeName || "";																									
+																									
+																									
+tdCode.textContent =																									
+store.storeCode || "";																									
+																									
+																									
+tdQty.textContent =																									
+store.qty || "";																									
+																									
+																									
+tdQty.className =																									
+qty;																									
+																									
+																									
+tr.appendChild(																									
+tdNo																									
+);																									
+																									
+tr.appendChild(																									
+tdName																									
+);																									
+																									
+tr.appendChild(																									
+tdCode																									
+);																									
+																									
+tr.appendChild(																									
+tdQty																									
+);																									
+																									
+																									
+storesBody																									
+.appendChild(																									
+tr																									
+);																									
+																									
+}																									
+);																									
+																									
+																									
+document																									
+.getElementById(																									
+storesCard																									
+)																									
+.style.display =																									
+block;																									
+																									
+																									
+statusEl.style.color =																									
+#2e7d32;																									
+																									
+																									
+statusEl.textContent =																									
+✅ 商品と出荷データを確認しました;																									
+																									
+																									
+} catch (error) {																									
+																									
+statusEl.style.color =																									
+#d32f2f;																									
+																									
+																									
+statusEl.textContent =																									
+❌ 接続エラー： +																									
+(																									
+error &&																									
+error.message																									
+? error.message																									
+: error																									
+);																									
+																									
+}																									
+																									
+}																									
+																									
+																									
+function onScanError(																									
+errorMessage																									
+) {																									
+																									
+// 読み取り途中の失敗は無視																									
+																									
+}																									
+																									
+																									
+async function stopScanner() {																									
+																									
+if (																									
+!scanner ||																									
+!running																									
+) {																									
+return;																									
+}																									
+																									
+																									
+try {																									
+																									
+await scanner.stop();																									
+																									
+scanner.clear();																									
+																									
+} catch (error) {																									
+																									
+console.error(																									
+Stop Error:,																									
+error																									
+);																									
+																									
+}																									
+																									
+																									
+running = false;																									
+																									
+																									
+document																									
+.getElementById(																									
+startBtn																									
+)																									
+.style.display =																									
+block;																									
+																									
+																									
+document																									
+.getElementById(																									
+stopBtn																									
+)																									
+.style.display =																									
+none;																									
+																									
+}																									
+																									
 </script>																									
 																									
 </body>																									
