@@ -3,36 +3,47 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1">																									
-																									
 <title>カメラテスト</title>																									
 																									
 <style>																									
 body {																									
-font-family: -apple-system, BlinkMacSystemFont, sans-serif;																									
-padding: 25px;																									
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;																									
+margin: 0;																									
+padding: 24px;																									
+background: #f4f5f7;																									
+color: #111;																									
+}																									
+																									
+h1 {																									
+font-size: 34px;																									
+margin-bottom: 24px;																									
 }																									
 																									
 button {																									
 width: 100%;																									
 padding: 20px;																									
 font-size: 22px;																									
+font-weight: 700;																									
 background: #1976d2;																									
 color: white;																									
 border: none;																									
-border-radius: 12px;																									
+border-radius: 14px;																									
 }																									
 																									
 #status {																									
-margin-top: 20px;																									
-font-size: 20px;																									
-font-weight: bold;																									
+margin-top: 22px;																									
+font-size: 22px;																									
+font-weight: 700;																									
+padding: 14px;																									
+background: white;																									
+border-radius: 12px;																									
 }																									
 																									
 video {																									
 width: 100%;																									
 margin-top: 20px;																									
 background: black;																									
-border-radius: 12px;																									
+border-radius: 14px;																									
 }																									
 </style>																									
 </head>																									
@@ -45,55 +56,62 @@ border-radius: 12px;
 📷 カメラを起動																									
 </button>																									
 																									
-<div id="status">待機中</div>																									
+<div id="status">																									
+JavaScript読込OK																									
+</div>																									
 																									
 <video																									
 id="video"																									
 autoplay																									
-playsinline>																									
+playsinline																									
+muted>																									
 </video>																									
 																									
-																									
 <script>																									
-																									
 async function startCamera() {																									
 																									
-document.getElementById("status").textContent =																									
-① ボタンは動いています;																									
+const status =																									
+document.getElementById("status");																									
+																									
+status.textContent =																									
+① ボタン反応OK;																									
 																									
 try {																									
 																									
-if (!navigator.mediaDevices) {																									
+if (																									
+!navigator.mediaDevices ||																									
+!navigator.mediaDevices.getUserMedia																									
+) {																									
 																									
-document.getElementById("status").textContent =																									
-❌ mediaDevicesが使えません;																									
+status.textContent =																									
+❌ このブラウザではカメラAPIが使えません;																									
 																									
 return;																									
 }																									
 																									
-document.getElementById("status").textContent =																									
-② カメラを要求しています;																									
+status.textContent =																									
+② カメラ許可を要求中;																									
 																									
 const stream =																									
 await navigator.mediaDevices.getUserMedia({																									
-																									
 video: {																									
-facingMode: "environment"																									
+facingMode: {																									
+ideal: "environment"																									
+}																									
 },																									
-																									
 audio: false																									
-																									
 });																									
 																									
-document.getElementById("video").srcObject =																									
-stream;																									
+document																									
+.getElementById("video")																									
+.srcObject = stream;																									
 																									
-document.getElementById("status").textContent =																									
+status.textContent =																									
 ✅ カメラ起動成功;																									
 																									
 } catch (error) {																									
 																									
-document.getElementById("status").textContent =																									
+status.textContent =																									
 ❌  +																									
 error.name +																									
  :  +																									
@@ -102,7 +120,6 @@ error.message;
 }																									
 																									
 }																									
-																									
 </script>																									
 																									
 </body>																									
