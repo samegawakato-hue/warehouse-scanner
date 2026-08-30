@@ -3,47 +3,66 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>店舗別仕分けピッキング</title>																									
+<title>ピッキング＆入荷管理</title>																									
 <script src="https://unpkg.com/@zxing/library@latest"></script>																									
 <style>																									
-body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 15px; }																									
-.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }																									
-.btn { background: #2563eb; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100%; cursor: pointer; }																									
-.status { padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 10px; text-align: center; }																									
+body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 12px; }																									
+.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }																									
+.mode-btn { background: #e2e8f0; color: #334155; border: none; padding: 12px 5px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; }																									
+.mode-btn.active { background: #2563eb; color: #fff; }																									
+.btn-action { background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; }																									
+.status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; }																									
 .status.success { background: #dcfce7; color: #15803d; }																									
-.status.error { background: #fee2e2; color: #dc2626; font-size: 18px; }																									
-.mode-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 8px; }																									
-.mode-item { background: #e0f2fe; color: #0369a1; }																									
-.mode-store { background: #fef3c7; color: #b45309; }																									
-.big-num { font-size: 36px; font-weight: bold; color: #2563eb; }																									
-.store-card { border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-top: 8px; }																									
+.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
+.big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
+.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 6px; }																									
 .store-card.active { border-color: #2563eb; background: #eff6ff; }																									
 .store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
 video { width: 100%; border-radius: 8px; }																									
+input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
+<!-- メイン3大ボタン -->																									
+<div class="btn-grid">																									
+<button id="btnOutItem" class="mode-btn active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
+<button id="btnOutStore" class="mode-btn" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
+<button id="btnInItem" class="mode-btn" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
+</div>																									
+																									
 <div class="card">																									
-<div id="modeBadge" class="mode-badge mode-item">STEP 1: 商品スキャン</div>																									
-<button id="scanBtn" class="btn">📷 バーコードをスキャン</button>																									
+<div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
+<button id="scanBtn" class="btn-action">📷 スキャン開始</button>																									
+																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
-<button id="closeScanBtn" class="btn" style="background:#64748b; margin-top:5px;">キャンセル</button>																									
+<button onclick="stopScan()" class="mode-btn" style="width:100%; margin-top:5px;">キャンセリスキャン</button>																									
 </div>																									
+																									
 <div id="status" class="status" style="display:none;"></div>																									
 </div>																									
 																									
-<div id="resultArea" style="display:none;">																									
-<div class="card" style="text-align:center;">																									
-<h2 id="itemTitle" style="margin:0;"></h2>																									
-<div id="itemSub" style="color:#64748b; font-size:13px; margin-top:4px;"></div>																									
-<div style="margin-top:10px;">出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
+<!-- 出荷エリア -->																									
+<div id="outArea" class="card" style="display:none;">																									
+<div style="text-align:center;">																									
+<h3 id="itemTitle" style="margin:0;"></h3>																									
+<div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
+<div style="margin-top:6px;">本日出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
+</div>																									
+<hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
+<div id="storeList"></div>																									
 </div>																									
 																									
-<div class="card">																									
-<h3 style="margin:0 0 10px 0;">対象店舗一覧</h3>																									
-<div id="storeList"></div>																									
+<!-- 入荷手入力エリア -->																									
+<div id="inArea" class="card" style="display:none;">																									
+<h3>入荷登録</h3>																									
+<div id="inItemInfo" style="font-weight:bold; margin-bottom:10px;">商品をスキャンしてください</div>																									
+<div id="inInputForm" style="display:none; align-items:center; gap:10px;">																									
+<label>入荷数量:</label>																									
+<input type="number" id="inQtyInput" value="1" min="1">																									
+<button class="btn-action" style="width:auto; padding:8px 16px;" onclick="submitInQty()">確定</button>																									
 </div>																									
 </div>																									
 																									
@@ -51,12 +70,32 @@ video { width: 100%; border-radius: 8px; }
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz1K5bK4K5-YOUR-ID-HERE/exec";																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
 																									
-let currentMode = 'ITEM'; // 'ITEM' または 'STORE'																									
+let currentMode = 'OUT_ITEM'; // OUT_ITEM, OUT_STORE, OUT_NEED, IN_ITEM																									
 let currentData = null;																									
+let activeStoreCode = null;																									
 let storeCounts = {};																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
-document.getElementById('closeScanBtn').addEventListener('click', stopScan);																									
+																									
+function switchMode(mode) {																									
+currentMode = mode;																									
+document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));																									
+document.getElementById('status').style.display = 'none';																									
+																									
+const titleEl = document.getElementById('modeTitle');																									
+if (mode === 'OUT_ITEM') {																									
+document.getElementById('btnOutItem').classList.add('active');																									
+titleEl.innerText = 'MODE: 出荷商品スキャン（総個数確認）';																									
+} else if (mode === 'OUT_STORE') {																									
+document.getElementById('btnOutStore').classList.add('active');																									
+titleEl.innerText = 'MODE: 出荷店舗スキャン（箱の店番）';																									
+} else if (mode === 'IN_ITEM') {																									
+document.getElementById('btnInItem').classList.add('active');																									
+titleEl.innerText = 'MODE: 入荷商品スキャン（個数手入力）';																									
+document.getElementById('inArea').style.display = 'block';																									
+document.getElementById('outArea').style.display = 'none';																									
+}																									
+}																									
 																									
 function startScan() {																									
 document.getElementById('videoContainer').style.display = 'block';																									
@@ -73,14 +112,20 @@ document.getElementById('videoContainer').style.display = 'none';
 }																									
 																									
 function handleScan(code) {																									
-if (currentMode === 'ITEM') {																									
+if (currentMode === 'OUT_ITEM') {																									
 stopScan();																									
 fetchProductData(code);																									
-} else if (currentMode === 'STORE') {																									
-processStoreScan(code);																									
+} else if (currentMode === 'OUT_STORE') {																									
+verifyStoreScan(code);																									
+} else if (currentMode === 'OUT_NEED') {																									
+countNeedItemScan(code);																									
+} else if (currentMode === 'IN_ITEM') {																									
+stopScan();																									
+prepareInItem(code);																									
 }																									
 }																									
 																									
+// 1. 出荷商品スキャン																									
 function fetchProductData(barcode) {																									
 showStatus('商品データ取得中...', 'success');																									
 const script = document.createElement('script');																									
@@ -95,8 +140,8 @@ storeCounts = {};
 data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
 renderProductData(data);																									
-setMode('STORE');																									
-showStatus('箱（店番）のバーコードをスキャンしてください', 'success');																									
+switchMode('OUT_STORE');																									
+showStatus('商品確認完了。店舗箱のバーコードをスキャンしてください', 'success');																									
 } else {																									
 triggerError('未登録の商品です');																									
 }																									
@@ -106,11 +151,14 @@ script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&c
 document.body.appendChild(script);																									
 }																									
 																									
-function processStoreScan(storeCode) {																									
-if (!currentData) return;																									
+// 2. 店舗スキャン判定																									
+function verifyStoreScan(storeCode) {																									
+if (!currentData) {																									
+triggerError('先に「出荷商品」をスキャンしてください');																									
+return;																									
+}																									
 																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(storeCode));																									
-																									
 if (!targetStore) {																									
 triggerError('❌ 対象外の店舗箱です！');																									
 return;																									
@@ -118,22 +166,54 @@ return;
 																									
 const currentCount = storeCounts[storeCode] || 0;																									
 if (currentCount >= targetStore.qty) {																									
-triggerError('⚠️ この店舗は既に必要個数に達しています！');																									
+triggerError('⚠️ この店舗の必要個数は満たしています！');																									
 return;																									
 }																									
 																									
-// 正常投入																									
-storeCounts[storeCode]++;																									
-updateStoreUI(targetStore.storeCode, storeCounts[storeCode], targetStore.qty);																									
-showStatus(`OK: ${targetStore.storeName} (${storeCounts[storeCode]}/${targetStore.qty}個)`, 'success');																									
+activeStoreCode = storeCode;																									
+currentMode = 'OUT_NEED';																									
+document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${targetStore.storeName})`;																									
+showStatus(`店舗確認OK: 商品のバーコードをあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+}																									
 																									
-// 全体完了チェック																									
-checkAllCompleted();																									
+// 3. 商品必要個数スキャン																									
+function countNeedItemScan(barcode) {																									
+if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
+triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
+return;																									
+}																									
+																									
+const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
+storeCounts[activeStoreCode]++;																									
+																									
+const count = storeCounts[activeStoreCode];																									
+updateStoreUI(activeStoreCode, count, targetStore.qty);																									
+																									
+if (count >= targetStore.qty) {																									
+showStatus(`🎉 ${targetStore.storeName} への投入完了！`, 'success');																									
+switchMode('OUT_STORE');																									
+} else {																									
+showStatus(`OK (${count}/${targetStore.qty}個) - 続けてスキャン`, 'success');																									
+}																									
+}																									
+																									
+// 4. 入荷商品スキャン＆手入力																									
+function prepareInItem(barcode) {																									
+document.getElementById('inItemInfo').innerText = `バーコード: ${barcode}`;																									
+document.getElementById('inInputForm').style.display = 'flex';																									
+showStatus('数量を入力して確定を押してください', 'success');																									
+}																									
+																									
+function submitInQty() {																									
+const qty = document.getElementById('inQtyInput').value;																									
+alert(`入荷登録完了: ${qty} 個`);																									
+document.getElementById('inInputForm').style.display = 'none';																									
+document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
+showStatus('入荷登録が完了しました', 'success');																									
 }																									
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-// エラー音（ビープ音）生成																									
 const ctx = new (window.AudioContext || window.webkitAudioContext)();																									
 const osc = ctx.createOscillator();																									
 osc.type = 'sawtooth';																									
@@ -142,26 +222,13 @@ osc.connect(ctx.destination);
 osc.start();																									
 osc.stop(ctx.currentTime + 0.5);																									
 																									
-// バイブレーション（スマホのみ）																									
 if (navigator.vibrate) {																									
 navigator.vibrate([200, 100, 200, 100, 400]);																									
 }																									
 }																									
 																									
-function setMode(mode) {																									
-currentMode = mode;																									
-const badge = document.getElementById('modeBadge');																									
-if (mode === 'ITEM') {																									
-badge.innerText = 'STEP 1: 商品スキャン';																									
-badge.className = 'mode-badge mode-item';																									
-} else {																									
-badge.innerText = 'STEP 2: 店舗箱（店番）スキャン継続中';																									
-badge.className = 'mode-badge mode-store';																									
-}																									
-}																									
-																									
 function renderProductData(data) {																									
-document.getElementById('resultArea').style.display = 'block';																									
+document.getElementById('outArea').style.display = 'block';																									
 document.getElementById('itemTitle').innerText = `${data.model} / ${data.color}`;																									
 document.getElementById('itemSub').innerText = `商品コード: ${data.productCode}`;																									
 document.getElementById('totalQty').innerText = data.totalQty;																									
@@ -174,7 +241,7 @@ div.className = 'store-card';
 div.id = `card-${store.storeCode}`;																									
 div.innerHTML = `																									
 <div style="font-weight:bold;">No.${store.storeNo} ${store.storeName} (店番: ${store.storeCode})</div>																									
-<div style="font-size:20px; font-weight:bold; margin-top:4px;">																									
+<div style="font-size:18px; font-weight:bold; margin-top:4px;">																									
 投入数: <span id="count-${store.storeCode}">0</span> / ${store.qty} 個																									
 </div>																									
 `;																									
@@ -185,23 +252,10 @@ listEl.appendChild(div);
 function updateStoreUI(storeCode, count, max) {																									
 const card = document.getElementById(`card-${storeCode}`);																									
 document.getElementById(`count-${storeCode}`).innerText = count;																									
-																									
 if (count >= max) {																									
 card.className = 'store-card done';																									
 } else {																									
 card.className = 'store-card active';																									
-}																									
-}																									
-																									
-function checkAllCompleted() {																									
-let isAllDone = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
-if (isAllDone) {																									
-showStatus('🎉 この商品の全店舗ピッキングが完了しました！', 'success');																									
-stopScan();																									
-setTimeout(() => {																									
-setMode('ITEM');																									
-document.getElementById('resultArea').style.display = 'none';																									
-}, 2500);																									
 }																									
 }																									
 																									
