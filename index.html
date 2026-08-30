@@ -3,7 +3,6 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1">																									
-																									
 <title>カメラテスト</title>																									
 																									
 <style>																									
@@ -20,6 +19,7 @@ background: #1976d2;
 color: white;																									
 border: 0;																									
 border-radius: 15px;																									
+cursor: pointer;																									
 }																									
 																									
 #status {																									
@@ -28,6 +28,7 @@ padding: 20px;
 font-size: 22px;																									
 font-weight: bold;																									
 background: #eee;																									
+border-radius: 10px;																									
 }																									
 																									
 video {																									
@@ -43,45 +44,40 @@ border-radius: 15px;
 																									
 <h1>カメラテスト</h1>																									
 																									
-<button																									
-onclick="																									
-document.getElementById('status').textContent='① ボタン反応OK';																									
+<button id="start-btn">📷 カメラを起動</button>																									
+																									
+<div id="status">待機中</div>																									
+																									
+<video id="video" autoplay playsinline muted></video>																									
+																									
+<script>																									
+const startBtn = document.getElementById('start-btn');																									
+const statusEl = document.getElementById('status');																									
+const videoEl = document.getElementById('video');																									
+																									
+startBtn.addEventListener('click', async () => {																									
+statusEl.textContent = '① ボタン反応OK';																									
 																									
 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {																									
-document.getElementById('status').textContent='❌ カメラAPIが使えません';																									
-} else {																									
-document.getElementById('status').textContent='② カメラ許可を要求中';																									
-																									
-navigator.mediaDevices.getUserMedia({																									
-video: {																									
-facingMode: 'environment'																									
-},																									
-audio: false																									
-})																									
-.then(function(stream) {																									
-document.getElementById('video').srcObject = stream;																									
-document.getElementById('status').textContent='✅ カメラ起動成功';																									
-})																									
-.catch(function(error) {																									
-document.getElementById('status').textContent =																									
-❌ ' + error.name + ' : ' + error.message;																									
-});																									
+statusEl.textContent = '❌ カメラAPIが使えません（HTTPSで接続しているか確認してください）';																									
+return;																									
 }																									
-"
->
-📷 カメラを起動
-</button>
-
-<div id=status"">"																									
-待機中																									
-</div>																									
 																									
-<video																									
-id="video"																									
-autoplay																									
-playsinline																									
-muted>																									
-</video>																									
+statusEl.textContent = '② カメラ許可を要求中';																									
+																									
+try {																									
+const stream = await navigator.mediaDevices.getUserMedia({																									
+video: { facingMode: 'environment' },																									
+audio: false																									
+});																									
+																									
+videoEl.srcObject = stream;																									
+statusEl.textContent = '✅ カメラ起動成功';																									
+} catch (error) {																									
+statusEl.textContent = `❌ ${error.name} : ${error.message}`;																									
+}																									
+});																									
+</script>																									
 																									
 </body>																									
 </html>																									
