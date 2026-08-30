@@ -2,426 +2,215 @@
 <html lang="ja">																									
 <head>																									
 <meta charset="UTF-8">																									
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">																									
-<title>店舗別ピッキング</title>																									
-																									
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>																									
-																									
+<meta name="viewport" content="width=device-width, initial-scale=1.0">																									
+<title>店舗別仕分けピッキング</title>																									
+<script src="https://unpkg.com/@zxing/library@latest"></script>																									
 <style>																									
-body {																									
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;																									
-margin: 0;																									
-background: #f4f5f7;																									
-color: #111;																									
-}																									
-																									
-.wrap {																									
-max-width: 720px;																									
-margin: 0 auto;																									
-padding: 16px;																									
-}																									
-																									
-h1 {																									
-text-align: center;																									
-font-size: 24px;																									
-}																									
-																									
-.card {																									
-background: white;																									
-border-radius: 14px;																									
-padding: 16px;																									
-margin-bottom: 14px;																									
-}																									
-																									
-button {																									
-width: 100%;																									
-padding: 16px;																									
-margin-top: 10px;																									
-border: 0;																									
-border-radius: 10px;																									
-font-size: 18px;																									
-font-weight: bold;																									
-cursor: pointer;																									
-}																									
-																									
-.start {																									
-background: #1976d2;																									
-color: white;																									
-}																									
-																									
-.stop {																									
-background: #555;																									
-color: white;																									
-}																									
-																									
-#reader {																									
-width: 100%;																									
-margin-top: 14px;																									
-overflow: hidden;																									
-border-radius: 8px;																									
-}																									
-																									
-#status {																									
-margin-top: 12px;																									
-padding: 12px;																									
-border-radius: 10px;																									
-background: #eef1f4;																									
-font-size: 15px;																									
-font-weight: bold;																									
-line-height: 1.4;																									
-word-break: break-all;																									
-}																									
-																									
-#result {																									
-margin-top: 12px;																									
-font-size: 28px;																									
-font-weight: 800;																									
-word-break: break-all;																									
-}																									
-																									
-/* 商品・店舗表示用の追加スタイル */																									
-.product-title {																									
-font-size: 22px;																									
-font-weight: 800;																									
-margin-bottom: 8px;																									
-}																									
-																									
-.info-row {																									
-margin-bottom: 4px;																									
-font-size: 14px;																									
-color: #444;																									
-}																									
-																									
-.total-label {																									
-text-align: center;																									
-margin-top: 16px;																									
-font-weight: bold;																									
-color: #555;																									
-}																									
-																									
-.total-qty {																									
-font-size: 44px;																									
-font-weight: 900;																									
-text-align: center;																									
-margin: 4px 0 12px;																									
-color: #1976d2;																									
-}																									
-																									
-table {																									
-width: 100%;																									
-border-collapse: collapse;																									
-margin-top: 10px;																									
-}																									
-																									
-th, td {																									
-padding: 10px 6px;																									
-border-bottom: 1px solid #eee;																									
-text-align: left;																									
-font-size: 14px;																									
-}																									
-																									
-th {																									
-background: #f8f9fa;																									
-color: #555;																									
-}																									
-																									
-th:last-child, td:last-child {																									
-text-align: right;																									
-}																									
-																									
-.qty {																									
-font-size: 20px;																									
-font-weight: 800;																									
-color: #d32f2f;																									
-}																									
+body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 15px; }																									
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }																									
+.btn { background: #2563eb; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100%; cursor: pointer; }																									
+.status { padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 10px; text-align: center; }																									
+.status.success { background: #dcfce7; color: #15803d; }																									
+.status.error { background: #fee2e2; color: #dc2626; font-size: 18px; }																									
+.mode-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 8px; }																									
+.mode-item { background: #e0f2fe; color: #0369a1; }																									
+.mode-store { background: #fef3c7; color: #b45309; }																									
+.big-num { font-size: 36px; font-weight: bold; color: #2563eb; }																									
+.store-card { border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-top: 8px; }																									
+.store-card.active { border-color: #2563eb; background: #eff6ff; }																									
+.store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
+video { width: 100%; border-radius: 8px; }																									
 </style>																									
 </head>																									
-																									
 <body>																									
 																									
-<div class="wrap">																									
-																									
-<h1>店舗別ピッキング</h1>																									
-																									
 <div class="card">																									
-<button id="startBtn" class="start" onclick="startScanner()">																									
-📷 商品バーコードをスキャン																									
-</button>																									
-																									
-<button																									
-id="stopBtn"																									
-class="stop"																									
-style="display:none"																									
-onclick="stopScanner()">																									
-カメラを閉じる																									
-</button>																									
-																									
-<div id="reader"></div>																									
-																									
-<div id="status">																									
-「商品バーコードをスキャン」を押してください																									
+<div id="modeBadge" class="mode-badge mode-item">STEP 1: 商品スキャン</div>																									
+<button id="scanBtn" class="btn">📷 バーコードをスキャン</button>																									
+<div id="videoContainer" style="display:none; margin-top:10px;">																									
+<video id="video"></video>																									
+<button id="closeScanBtn" class="btn" style="background:#64748b; margin-top:5px;">キャンセル</button>																									
 </div>																									
+<div id="status" class="status" style="display:none;"></div>																									
+</div>																									
+																									
+<div id="resultArea" style="display:none;">																									
+<div class="card" style="text-align:center;">																									
+<h2 id="itemTitle" style="margin:0;"></h2>																									
+<div id="itemSub" style="color:#64748b; font-size:13px; margin-top:4px;"></div>																									
+<div style="margin-top:10px;">出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
 </div>																									
 																									
 <div class="card">																									
-<div>読み取り結果</div>																									
-<div id="result">未読取</div>																									
+<h3 style="margin:0 0 10px 0;">対象店舗一覧</h3>																									
+<div id="storeList"></div>																									
 </div>																									
-																									
-<!-- 商品データ表示用エリア（初期状態は非表示） -->																									
-<div id="productCard" class="card" style="display:none;">																									
-<div id="productName" class="product-title"></div>																									
-<div class="info-row">商品コード：<strong id="productCode"></strong></div>																									
-<div class="info-row">実物バーコード：<strong id="productBarcode"></strong></div>																									
-																									
-<div class="total-label">本日の出荷合計</div>																									
-<div id="totalQty" class="total-qty">0</div>																									
-</div>																									
-																									
-<!-- 店舗一覧表示用エリア（初期状態は非表示） -->																									
-<div id="storesCard" class="card" style="display:none;">																									
-<h2 style="font-size: 18px; margin: 0 0 10px 0;">出荷店舗一覧</h2>																									
-<table>																									
-<thead>																									
-<tr>																									
-<th>No</th>																									
-<th>店舗名</th>																									
-<th>店番</th>																									
-<th style="text-align:right;">数量</th>																									
-</tr>																									
-</thead>																									
-<tbody id="storesBody"></tbody>																									
-</table>																									
-</div>																									
-																									
 </div>																									
 																									
 <script>																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbz1K5bK4K5-YOUR-ID-HERE/exec";																									
+const codeReader = new ZXing.BrowserMultiFormatReader();																									
 																									
-// GAS API URL																									
-const API_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
+let currentMode = 'ITEM'; // 'ITEM' または 'STORE'																									
+let currentData = null;																									
+let storeCounts = {};																									
 																									
-let scanner = null;																									
-let running = false;																									
-let callbackCounter = 0;																									
+document.getElementById('scanBtn').addEventListener('click', startScan);																									
+document.getElementById('closeScanBtn').addEventListener('click', stopScan);																									
 																									
-/* ----------------------------------------------------																									
-GAS通信用関数（JSONP方式：通信時のエラー回避用）																									
----------------------------------------------------- */																									
-function apiGet(params) {																									
-return new Promise(function(resolve, reject) {																									
-const callbackName = "gasCallback_" + Date.now() + "_" + callbackCounter++;																									
-const script = document.createElement("script");																									
+function startScan() {																									
+document.getElementById('videoContainer').style.display = 'block';																									
+codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
+if (result) {																									
+handleScan(result.text);																									
+}																									
+});																									
+}																									
 																									
-const timeout = setTimeout(function() {																									
-cleanup();																									
-reject(new Error("GASから応答がありません（タイムアウト）"));																									
-}, 12000);																									
+function stopScan() {																									
+codeReader.reset();																									
+document.getElementById('videoContainer').style.display = 'none';																									
+}																									
 																									
-function cleanup() {																									
-clearTimeout(timeout);																									
-try { delete window[callbackName]; } catch (e) {}																									
-if (script.parentNode) {																									
-script.parentNode.removeChild(script);																									
+function handleScan(code) {																									
+if (currentMode === 'ITEM') {																									
+stopScan();																									
+fetchProductData(code);																									
+} else if (currentMode === 'STORE') {																									
+processStoreScan(code);																									
 }																									
 }																									
+																									
+function fetchProductData(barcode) {																									
+showStatus('商品データ取得中...', 'success');																									
+const script = document.createElement('script');																									
+const callbackName = 'cb_' + Date.now();																									
 																									
 window[callbackName] = function(data) {																									
-cleanup();																									
-resolve(data);																									
-};																									
+delete window[callbackName];																									
+document.body.removeChild(script);																									
+if (data.success) {																									
+currentData = data;																									
+storeCounts = {};																									
+data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
-const query = new URLSearchParams();																									
-Object.keys(params).forEach(function(key) {																									
-query.append(key, params[key]);																									
-});																									
-query.append("callback", callbackName);																									
-																									
-script.src = API_URL + "?" + query.toString();																									
-script.onerror = function() {																									
-cleanup();																									
-reject(new Error("GASサーバーに接続できませんでした"));																									
-};																									
-																									
-document.body.appendChild(script);																									
-});																									
-}																									
-																									
-/* ----------------------------------------------------																									
-カメラ起動（動作確認済みコード完全据え置き）																									
----------------------------------------------------- */																									
-async function startScanner() {																									
-if (running) return;																									
-																									
-const statusEl = document.getElementById("status");																									
-statusEl.style.color = "#111";																									
-statusEl.textContent = "カメラを起動しています…";																									
-																									
-try {																									
-scanner = new Html5Qrcode("reader", {																									
-formatsToSupport: [																									
-Html5QrcodeSupportedFormats.UPC_A,																									
-Html5QrcodeSupportedFormats.UPC_E,																									
-Html5QrcodeSupportedFormats.EAN_13,																									
-Html5QrcodeSupportedFormats.EAN_8,																									
-Html5QrcodeSupportedFormats.CODE_128,																									
-Html5QrcodeSupportedFormats.CODE_39																									
-],																									
-verbose: false																									
-});																									
-																									
-const config = {																									
-fps: 20,																									
-disableFlip: true,																									
-qrbox: {																									
-width: 280,																									
-height: 120																									
-}																									
-};																									
-																									
-await scanner.start(																									
-{ facingMode: "environment" },																									
-config,																									
-onScanSuccess,																									
-onScanError																									
-);																									
-																									
-running = true;																									
-																									
-document.getElementById("startBtn").style.display = "none";																									
-document.getElementById("stopBtn").style.display = "block";																									
-																									
-statusEl.textContent = "バーコードを横向きに、枠内に合わせてください";																									
-																									
-} catch (error) {																									
-console.error("Camera Start Error:", error);																									
-																									
-statusEl.style.color = "#d32f2f";																									
-																									
-let errorMessage = "カメラを起動できませんでした。";																									
-const errString = error.toString();																									
-																									
-if (errString.includes("NotAllowedError") || errString.includes("PermissionDeniedError")) {																									
-errorMessage = "⚠️ カメラの利用権限が拒否されています。ブラウザの設定でカメラを許可してください。";																									
-} else if (errString.includes("NotFoundError") || errString.includes("DevicesNotFoundError")) {																									
-errorMessage = "⚠️ カメラが見つかりません。";																									
-} else if (errString.includes("NotReadableError") || errString.includes("TrackStartError")) {																									
-errorMessage = "⚠️ カメラが他のアプリで使用されている可能性があります。";																									
+renderProductData(data);																									
+setMode('STORE');																									
+showStatus('箱（店番）のバーコードをスキャンしてください', 'success');																									
 } else {																									
-errorMessage += ` (${error.name || error.message || error})`;																									
+triggerError('未登録の商品です');																									
+}																									
+};																									
+																									
+script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&callback=${callbackName}`;																									
+document.body.appendChild(script);																									
 }																									
 																									
-statusEl.textContent = errorMessage;																									
-running = false;																									
-}																									
-}																									
+function processStoreScan(storeCode) {																									
+if (!currentData) return;																									
 																									
-/* ----------------------------------------------------																									
-読み取り成功時処理（ここにGAS連携を追加）																									
----------------------------------------------------- */																									
-async function onScanSuccess(decodedText) {																									
-// 1. スキャン成功の表示・バイブレーション																									
-document.getElementById("result").textContent = decodedText;																									
-const statusEl = document.getElementById("status");																									
-statusEl.style.color = "#2e7d32";																									
-statusEl.textContent = "✅ 読み取り成功。商品データを検索中…";																									
+const targetStore = currentData.stores.find(s => String(s.storeCode) === String(storeCode));																									
 																									
-if (navigator.vibrate) {																									
-navigator.vibrate(150);																									
-}																									
-																									
-// 2. カメラを一旦停止（安定動作用）																									
-await stopScanner();																									
-																									
-// 3. GAS通信とデータ描画																									
-try {																									
-const data = await apiGet({																									
-action: "product",																									
-barcode: decodedText																									
-});																									
-																									
-if (!data || !data.success) {																									
-document.getElementById("productCard").style.display = "none";																									
-document.getElementById("storesCard").style.display = "none";																									
-statusEl.style.color = "#d32f2f";																									
-statusEl.textContent = "⚠️ " + (data && data.message ? data.message : "未登録の商品です") + "（" + decodedText + "）";																									
+if (!targetStore) {																									
+triggerError('❌ 対象外の店舗箱です！');																									
 return;																									
 }																									
 																									
-// 商品情報の反映																									
-document.getElementById("productName").textContent = (data.model || "") + (data.color ? " / " + data.color : "");																									
-document.getElementById("productCode").textContent = data.productCode || "";																									
-document.getElementById("productBarcode").textContent = data.barcode || decodedText;																									
-document.getElementById("totalQty").textContent = data.totalQty || 0;																									
-document.getElementById("productCard").style.display = "block";																									
+const currentCount = storeCounts[storeCode] || 0;																									
+if (currentCount >= targetStore.qty) {																									
+triggerError('⚠️ この店舗は既に必要個数に達しています！');																									
+return;																									
+}																									
 																									
-// 店舗一覧の生成・反映																									
-const storesBody = document.getElementById("storesBody");																									
-storesBody.innerHTML = "";																									
+// 正常投入																									
+storeCounts[storeCode]++;																									
+updateStoreUI(targetStore.storeCode, storeCounts[storeCode], targetStore.qty);																									
+showStatus(`OK: ${targetStore.storeName} (${storeCounts[storeCode]}/${targetStore.qty}個)`, 'success');																									
 																									
-const stores = Array.isArray(data.stores) ? data.stores : [];																									
+// 全体完了チェック																									
+checkAllCompleted();																									
+}																									
 																									
-if (stores.length === 0) {																									
-storesBody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#888;">本日の出荷データはありません</td></tr>';																									
+function triggerError(msg) {																									
+showStatus(msg, 'error');																									
+// エラー音（ビープ音）生成																									
+const ctx = new (window.AudioContext || window.webkitAudioContext)();																									
+const osc = ctx.createOscillator();																									
+osc.type = 'sawtooth';																									
+osc.frequency.setValueAtTime(440, ctx.currentTime);																									
+osc.connect(ctx.destination);																									
+osc.start();																									
+osc.stop(ctx.currentTime + 0.5);																									
+																									
+// バイブレーション（スマホのみ）																									
+if (navigator.vibrate) {																									
+navigator.vibrate([200, 100, 200, 100, 400]);																									
+}																									
+}																									
+																									
+function setMode(mode) {																									
+currentMode = mode;																									
+const badge = document.getElementById('modeBadge');																									
+if (mode === 'ITEM') {																									
+badge.innerText = 'STEP 1: 商品スキャン';																									
+badge.className = 'mode-badge mode-item';																									
 } else {																									
-stores.forEach(function(store) {																									
-const tr = document.createElement("tr");																									
+badge.innerText = 'STEP 2: 店舗箱（店番）スキャン継続中';																									
+badge.className = 'mode-badge mode-store';																									
+}																									
+}																									
 																									
-const tdNo = document.createElement("td");																									
-tdNo.textContent = store.storeNo || "";																									
+function renderProductData(data) {																									
+document.getElementById('resultArea').style.display = 'block';																									
+document.getElementById('itemTitle').innerText = `${data.model} / ${data.color}`;																									
+document.getElementById('itemSub').innerText = `商品コード: ${data.productCode}`;																									
+document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
-const tdName = document.createElement("td");																									
-tdName.textContent = store.storeName || "";																									
-																									
-const tdCode = document.createElement("td");																									
-tdCode.textContent = store.storeCode || "";																									
-																									
-const tdQty = document.createElement("td");																									
-tdQty.textContent = store.qty || "0";																									
-tdQty.className = "qty";																									
-																									
-tr.appendChild(tdNo);																									
-tr.appendChild(tdName);																									
-tr.appendChild(tdCode);																									
-tr.appendChild(tdQty);																									
-																									
-storesBody.appendChild(tr);																									
+const listEl = document.getElementById('storeList');																									
+listEl.innerHTML = '';																									
+data.stores.forEach(store => {																									
+const div = document.createElement('div');																									
+div.className = 'store-card';																									
+div.id = `card-${store.storeCode}`;																									
+div.innerHTML = `																									
+<div style="font-weight:bold;">No.${store.storeNo} ${store.storeName} (店番: ${store.storeCode})</div>																									
+<div style="font-size:20px; font-weight:bold; margin-top:4px;">																									
+投入数: <span id="count-${store.storeCode}">0</span> / ${store.qty} 個																									
+</div>																									
+`;																									
+listEl.appendChild(div);																									
 });																									
 }																									
 																									
-document.getElementById("storesCard").style.display = "block";																									
-statusEl.style.color = "#2e7d32";																									
-statusEl.textContent = "✅ データ取得完了";																									
+function updateStoreUI(storeCode, count, max) {																									
+const card = document.getElementById(`card-${storeCode}`);																									
+document.getElementById(`count-${storeCode}`).innerText = count;																									
 																									
-} catch (error) {																									
-statusEl.style.color = "#d32f2f";																									
-statusEl.textContent = "❌ エラー: " + (error.message || error);																									
+if (count >= max) {																									
+card.className = 'store-card done';																									
+} else {																									
+card.className = 'store-card active';																									
 }																									
 }																									
 																									
-function onScanError(errorMessage) {																									
-// スキャン途中のエラーは無視																									
+function checkAllCompleted() {																									
+let isAllDone = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
+if (isAllDone) {																									
+showStatus('🎉 この商品の全店舗ピッキングが完了しました！', 'success');																									
+stopScan();																									
+setTimeout(() => {																									
+setMode('ITEM');																									
+document.getElementById('resultArea').style.display = 'none';																									
+}, 2500);																									
+}																									
 }																									
 																									
-/* ----------------------------------------------------																									
-カメラ停止（動作確認済みコード完全据え置き）																									
----------------------------------------------------- */																									
-async function stopScanner() {																									
-if (!scanner || !running) return;																									
-																									
-try {																									
-await scanner.stop();																									
-scanner.clear();																									
-} catch (error) {																									
-console.error("Stop Error:", error);																									
+function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
 }																									
-																									
-running = false;																									
-document.getElementById("startBtn").style.display = "block";																									
-document.getElementById("stopBtn").style.display = "none";																									
-}																									
-																									
 </script>																									
-																									
 </body>																									
 </html>																									
