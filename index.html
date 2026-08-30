@@ -67,7 +67,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★ご自身のGASウェブアプリURLをここに貼り付けてください																									
+// ★新しいGASウェブアプリURLをここに貼り付けてください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbz1K5bK4K5-YOUR-ID-HERE/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -128,13 +128,27 @@ prepareInItem(code);
 }																									
 }																									
 																									
+// JSONP通信（CORSブロック回避）																									
 function fetchProductData(barcode) {																									
 showStatus('商品データ取得中...', 'success');																									
-const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}`;																									
 																									
-fetch(url)																									
-.then(res => res.json())																									
-.then(data => {																									
+const callbackName = 'cb_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+// 10秒タイムアウト設定																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+triggerError('通信タイムアウト：GASのURLまたはデプロイ設定を確認してください');																									
+}, 10000);																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+}																									
+																									
+window[callbackName] = function(data) {																									
+cleanup();																									
 if (data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
@@ -146,11 +160,15 @@ showStatus('商品確認完了。店舗箱のバーコードをスキャンし�
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
 }																									
-})																									
-.catch(err => {																									
-console.error(err);																									
-triggerError('通信エラー：データの取得に失敗しました');																									
-});																									
+};																									
+																									
+script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&callback=${callbackName}`;																									
+script.onerror = function() {																									
+cleanup();																									
+triggerError('通信エラー：アクセス権限（Webアプリ：全員）を確認してください');																									
+};																									
+																									
+document.body.appendChild(script);																									
 }																									
 																									
 function verifyStoreScan(storeCode) {																									
