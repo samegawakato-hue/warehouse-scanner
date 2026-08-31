@@ -170,7 +170,7 @@ data.stores.forEach(s => storeCounts[s.storeCode] = 0);
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
 stopScan();																									
-showStatus('商品確認完了。「スキャン開始」を押して店舗箱のバーコードをスキャンしてください', 'success');																									
+showStatus('1. 商品確認完了。「スキャン開始」を押して出荷店舗のバーコードをスキャンしてください', 'success');																									
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
 }																									
@@ -199,19 +199,19 @@ return;
 																									
 const currentCount = storeCounts[storeCode] || 0;																									
 if (currentCount >= targetStore.qty) {																									
-triggerError('⚠️ この店舗の必要個数は満たしています！');																									
+triggerError('⚠️ この店舗の必要個数は満たしています！別の店舗をスキャンしてください');																									
 return;																									
 }																									
 																									
 activeStoreCode = storeCode;																									
 currentMode = 'OUT_NEED';																									
 document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${targetStore.storeName})`;																									
-showStatus(`店舗確認OK: 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+showStatus(`2. 店舗確認OK (${targetStore.storeName}): 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
-stopScan(); // 誤読み取り時も一度カメラを停止																									
+stopScan();																									
 triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
 return;																									
 }																									
@@ -222,14 +222,14 @@ storeCounts[activeStoreCode]++;
 const count = storeCounts[activeStoreCode];																									
 updateStoreUI(activeStoreCode, count, targetStore.qty);																									
 																									
-// 1個読み取るたびにカメラを自動停止（誤連続カウント防止）																									
-stopScan();																									
+stopScan(); // 1個読み取るたびにカメラを停止（誤連続カウント防止）																									
 																									
 if (count >= targetStore.qty) {																									
-showStatus(`🎉 ${targetStore.storeName} への投入完了！次の店舗箱をスキャンしてください`, 'success');																									
+// ★店舗の必要数に達したら、自動的に「次の店舗のバーコードスキャン待ち」状態へ移行																									
 switchMode('OUT_STORE');																									
+showStatus(`🎉 ${targetStore.storeName} への投入完了！「スキャン開始」を押して次の店舗のバーコードをスキャンしてください`, 'success');																									
 } else {																									
-showStatus(`OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
+showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
 }																									
 																									
@@ -250,7 +250,6 @@ showStatus('入荷登録が完了しました', 'success');
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
 																									
-// ブザー音の出力処理																									
 try {																									
 const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
 if (ctx.state === 'suspended') {																									
@@ -261,7 +260,7 @@ const osc = ctx.createOscillator();
 const gain = ctx.createGain();																									
 																									
 osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(880, ctx.currentTime); // 高めの警告音（880Hz）																									
+osc.frequency.setValueAtTime(880, ctx.currentTime);																									
 																									
 gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
 																									
@@ -274,7 +273,6 @@ osc.stop(ctx.currentTime + 0.4);
 console.error('Audio Error:', e);																									
 }																									
 																									
-// バイブレーション																									
 if (navigator.vibrate) {																									
 navigator.vibrate([200, 100, 200, 100, 400]);																									
 }																									
