@@ -71,7 +71,7 @@ let currentMode = 'OUT_ITEM';
 let currentData = null;																									
 let activeStoreCode = null;																									
 let storeCounts = {};																									
-let isProcessing = false; // 連続読み取り防止フラグ																									
+let isProcessing = false;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
@@ -102,7 +102,7 @@ isProcessing = false;
 document.getElementById('videoContainer').style.display = 'block';																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
 if (result && !isProcessing) {																									
-isProcessing = true; // 1回スキャンしたら処理完了までガード																									
+isProcessing = true;																									
 handleScan(result.text);																									
 }																									
 });																									
@@ -119,7 +119,7 @@ if (currentMode === 'OUT_ITEM') {
 stopScan();																									
 fetchProductData(code);																									
 } else if (currentMode === 'OUT_STORE') {																									
-stopScan(); // 店舗バーコード読取完了で一度カメラOFF																									
+stopScan();																									
 verifyStoreScan(code);																									
 } else if (currentMode === 'OUT_NEED') {																									
 countNeedItemScan(code);																									
@@ -155,7 +155,7 @@ data.stores.forEach(s => storeCounts[s.storeCode] = 0);
 																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
-stopScan(); // 安全のため自動切り替え時にカメラ停止																									
+stopScan();																									
 showStatus('商品確認完了。「スキャン開始」を押して店舗箱のバーコードをスキャンしてください', 'success');																									
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
@@ -198,7 +198,7 @@ showStatus(`店舗確認OK: 「スキャン開始」を押して商品をあと 
 function countNeedItemScan(barcode) {																									
 if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
 triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
-setTimeout(() => { isProcessing = false; }, 1500); // 失敗時は連投防止のインターバル設定																									
+stopScan(); // エラー時もカメラを停止																									
 return;																									
 }																									
 																									
@@ -208,13 +208,14 @@ storeCounts[activeStoreCode]++;
 const count = storeCounts[activeStoreCode];																									
 updateStoreUI(activeStoreCode, count, targetStore.qty);																									
 																									
+// ★1個読み取るたびに必ずカメラを自動停止する																									
+stopScan();																									
+																									
 if (count >= targetStore.qty) {																									
-stopScan(); // 個数達成時にカメラ停止																									
-showStatus(`🎉 ${targetStore.storeName} への投入完了！`, 'success');																									
+showStatus(`🎉 ${targetStore.storeName} への投入完了！次の店舗箱をスキャンしてください`, 'success');																									
 switchMode('OUT_STORE');																									
 } else {																									
-showStatus(`OK (${count}/${targetStore.qty}個) - 続けてスキャン`, 'success');																									
-setTimeout(() => { isProcessing = false; }, 1000); // チャタリング防止間隔																									
+showStatus(`OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
 }																									
 																									
