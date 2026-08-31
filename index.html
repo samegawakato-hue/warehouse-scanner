@@ -72,6 +72,7 @@ let currentData = null;
 let activeStoreCode = null;																									
 let storeCounts = {};																									
 let isProcessing = false;																									
+let audioCtx = null;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
@@ -99,6 +100,19 @@ document.getElementById('outArea').style.display = 'none';
 																									
 function startScan() {																									
 isProcessing = false;																									
+																									
+// タップ操作時にブラウザの音声再生ブロックを解除																									
+try {																									
+if (!audioCtx) {																									
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+}																									
+if (audioCtx.state === 'suspended') {																									
+audioCtx.resume();																									
+}																									
+} catch (e) {																									
+console.error('AudioInit Error:', e);																									
+}																									
+																									
 document.getElementById('videoContainer').style.display = 'block';																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
 if (result && !isProcessing) {																									
@@ -197,8 +211,8 @@ showStatus(`店舗確認OK: 「スキャン開始」を押して商品をあと 
 																									
 function countNeedItemScan(barcode) {																									
 if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
+stopScan(); // 誤読み取り時も一度カメラを停止																									
 triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
-stopScan(); // エラー時もカメラを停止																									
 return;																									
 }																									
 																									
@@ -208,7 +222,7 @@ storeCounts[activeStoreCode]++;
 const count = storeCounts[activeStoreCode];																									
 updateStoreUI(activeStoreCode, count, targetStore.qty);																									
 																									
-// ★1個読み取るたびに必ずカメラを自動停止する																									
+// 1個読み取るたびにカメラを自動停止（誤連続カウント防止）																									
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
@@ -235,16 +249,32 @@ showStatus('入荷登録が完了しました', 'success');
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-const ctx = new (window.AudioContext || window.webkitAudioContext)();																									
-const osc = ctx.currentTime ? ctx.createOscillator() : null;																									
-if (osc) {																									
-osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(440, ctx.currentTime);																									
-osc.connect(ctx.destination);																									
-osc.start();																									
-osc.stop(ctx.currentTime + 0.5);																									
+																									
+// ブザー音の出力処理																									
+try {																									
+const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
+if (ctx.state === 'suspended') {																									
+ctx.resume();																									
 }																									
 																									
+const osc = ctx.createOscillator();																									
+const gain = ctx.createGain();																									
+																									
+osc.type = 'sawtooth';																									
+osc.frequency.setValueAtTime(880, ctx.currentTime); // 高めの警告音（880Hz）																									
+																									
+gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
+																									
+osc.connect(gain);																									
+gain.connect(ctx.destination);																									
+																									
+osc.start();																									
+osc.stop(ctx.currentTime + 0.4);																									
+} catch (e) {																									
+console.error('Audio Error:', e);																									
+}																									
+																									
+// バイブレーション																									
 if (navigator.vibrate) {																									
 navigator.vibrate([200, 100, 200, 100, 400]);																									
 }																									
