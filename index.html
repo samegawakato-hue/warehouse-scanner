@@ -101,7 +101,6 @@ document.getElementById('outArea').style.display = 'none';
 function startScan() {																									
 isProcessing = false;																									
 																									
-// タップ操作時にブラウザの音声再生ブロックを解除																									
 try {																									
 if (!audioCtx) {																									
 audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -222,12 +221,24 @@ storeCounts[activeStoreCode]++;
 const count = storeCounts[activeStoreCode];																									
 updateStoreUI(activeStoreCode, count, targetStore.qty);																									
 																									
-stopScan(); // 1個読み取るたびにカメラを停止（誤連続カウント防止）																									
+stopScan(); // 1個スキャンごとにカメラ停止																									
 																									
 if (count >= targetStore.qty) {																									
-// ★店舗の必要数に達したら、自動的に「次の店舗のバーコードスキャン待ち」状態へ移行																									
+// 全店舗のピッキングが完了したか判定																									
+const isAllCompleted = currentData.stores.every(s => storeCounts[s.storeCode] >= s.qty);																									
+																									
+if (isAllCompleted) {																									
+// ★全店舗の投入が完了したら、次の「出荷商品スキャン」へ戻る																									
+alert(`🎉 ${currentData.model} の全店舗へのピッキングが完了しました！`);																									
+currentData = null;																									
+document.getElementById('outArea').style.display = 'none';																									
+switchMode('OUT_ITEM');																									
+showStatus('全店舗の出荷完了！「スキャン開始」を押して次の出荷商品をスキャンしてください', 'success');																									
+} else {																									
+// まだ未完了の店舗が残っている場合																									
 switchMode('OUT_STORE');																									
 showStatus(`🎉 ${targetStore.storeName} への投入完了！「スキャン開始」を押して次の店舗のバーコードをスキャンしてください`, 'success');																									
+}																									
 } else {																									
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
