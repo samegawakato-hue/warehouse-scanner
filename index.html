@@ -64,7 +64,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// 指定いただいた最新のURLを設定済みです																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -72,6 +71,7 @@ let currentMode = 'OUT_ITEM';
 let currentData = null;																									
 let activeStoreCode = null;																									
 let storeCounts = {};																									
+let isProcessing = false; // 連続読み取り防止フラグ																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
@@ -98,9 +98,11 @@ document.getElementById('outArea').style.display = 'none';
 }																									
 																									
 function startScan() {																									
+isProcessing = false;																									
 document.getElementById('videoContainer').style.display = 'block';																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
-if (result) {																									
+if (result && !isProcessing) {																									
+isProcessing = true; // 1回スキャンしたら処理完了までガード																									
 handleScan(result.text);																									
 }																									
 });																									
@@ -109,6 +111,7 @@ handleScan(result.text);
 function stopScan() {																									
 codeReader.reset();																									
 document.getElementById('videoContainer').style.display = 'none';																									
+isProcessing = false;																									
 }																									
 																									
 function handleScan(code) {																									
@@ -116,6 +119,7 @@ if (currentMode === 'OUT_ITEM') {
 stopScan();																									
 fetchProductData(code);																									
 } else if (currentMode === 'OUT_STORE') {																									
+stopScan(); // 店舗バーコード読取完了で一度カメラOFF																									
 verifyStoreScan(code);																									
 } else if (currentMode === 'OUT_NEED') {																									
 countNeedItemScan(code);																									
@@ -151,7 +155,8 @@ data.stores.forEach(s => storeCounts[s.storeCode] = 0);
 																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
-showStatus('商品確認完了。店舗箱のバーコードをスキャンしてください', 'success');																									
+stopScan(); // 安全のため自動切り替え時にカメラ停止																									
+showStatus('商品確認完了。「スキャン開始」を押して店舗箱のバーコードをスキャンしてください', 'success');																									
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
 }																									
@@ -187,12 +192,13 @@ return;
 activeStoreCode = storeCode;																									
 currentMode = 'OUT_NEED';																									
 document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${targetStore.storeName})`;																									
-showStatus(`店舗確認OK: 商品のバーコードをあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+showStatus(`店舗確認OK: 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
 triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
+setTimeout(() => { isProcessing = false; }, 1500); // 失敗時は連投防止のインターバル設定																									
 return;																									
 }																									
 																									
@@ -203,10 +209,12 @@ const count = storeCounts[activeStoreCode];
 updateStoreUI(activeStoreCode, count, targetStore.qty);																									
 																									
 if (count >= targetStore.qty) {																									
+stopScan(); // 個数達成時にカメラ停止																									
 showStatus(`🎉 ${targetStore.storeName} への投入完了！`, 'success');																									
 switchMode('OUT_STORE');																									
 } else {																									
 showStatus(`OK (${count}/${targetStore.qty}個) - 続けてスキャン`, 'success');																									
+setTimeout(() => { isProcessing = false; }, 1000); // チャタリング防止間隔																									
 }																									
 }																									
 																									
@@ -227,12 +235,14 @@ showStatus('入荷登録が完了しました', 'success');
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
 const ctx = new (window.AudioContext || window.webkitAudioContext)();																									
-const osc = ctx.createOscillator();																									
+const osc = ctx.currentTime ? ctx.createOscillator() : null;																									
+if (osc) {																									
 osc.type = 'sawtooth';																									
 osc.frequency.setValueAtTime(440, ctx.currentTime);																									
 osc.connect(ctx.destination);																									
 osc.start();																									
 osc.stop(ctx.currentTime + 0.5);																									
+}																									
 																									
 if (navigator.vibrate) {																									
 navigator.vibrate([200, 100, 200, 100, 400]);																									
