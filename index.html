@@ -3,7 +3,7 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>ピッキング＆入荷管理</title>																									
+<title>ピッキング管理</title>																									
 <script src="https://unpkg.com/@zxing/library@latest"></script>																									
 <style>																									
 body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 12px; }																									
@@ -16,7 +16,7 @@ body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; p
 .status.success { background: #dcfce7; color: #15803d; }																									
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
 .big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
-.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 6px; }																									
+.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; }																									
 .store-card.active { border-color: #2563eb; background: #eff6ff; }																									
 .store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
 video { width: 100%; border-radius: 8px; }																									
@@ -45,7 +45,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
-<h3 id="itemTitle" style="margin:0;"></h3>																									
+<h3 id="itemTitle" style="margin:0;">商品ピッキング</h3>																									
 <div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
 <div style="margin-top:6px;">本日出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
 </div>																									
@@ -64,6 +64,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
+// ★環境に合わせてご自身のウェブアプリURLに書き換えてください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -205,11 +206,11 @@ return;
 activeStoreCode = storeCode;																									
 currentMode = 'OUT_NEED';																									
 document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${targetStore.storeName})`;																									
-showStatus(`2. 店舗確認OK (${targetStore.storeName}): 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+showStatus(`2. 店舗確認OK (箱No.${targetStore.storeNo} ${targetStore.storeName}): 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
-if (barcode !== currentData.barcode && barcode !== currentData.productCode) {																									
+if (barcode !== currentData.barcode) {																									
 stopScan();																									
 triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
 return;																									
@@ -224,18 +225,15 @@ updateStoreUI(activeStoreCode, count, targetStore.qty);
 stopScan(); // 1個スキャンごとにカメラ停止																									
 																									
 if (count >= targetStore.qty) {																									
-// 全店舗のピッキングが完了したか判定																									
 const isAllCompleted = currentData.stores.every(s => storeCounts[s.storeCode] >= s.qty);																									
 																									
 if (isAllCompleted) {																									
-// ★全店舗の投入が完了したら、次の「出荷商品スキャン」へ戻る																									
-alert(`🎉 ${currentData.model} の全店舗へのピッキングが完了しました！`);																									
+alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
 switchMode('OUT_ITEM');																									
 showStatus('全店舗の出荷完了！「スキャン開始」を押して次の出荷商品をスキャンしてください', 'success');																									
 } else {																									
-// まだ未完了の店舗が残っている場合																									
 switchMode('OUT_STORE');																									
 showStatus(`🎉 ${targetStore.storeName} への投入完了！「スキャン開始」を押して次の店舗のバーコードをスキャンしてください`, 'success');																									
 }																									
@@ -272,7 +270,6 @@ const gain = ctx.createGain();
 																									
 osc.type = 'sawtooth';																									
 osc.frequency.setValueAtTime(880, ctx.currentTime);																									
-																									
 gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
 																									
 osc.connect(gain);																									
@@ -291,20 +288,32 @@ navigator.vibrate([200, 100, 200, 100, 400]);
 																									
 function renderProductData(data) {																									
 document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemTitle').innerText = `${data.model} / ${data.color}`;																									
-document.getElementById('itemSub').innerText = `商品コード: ${data.productCode}`;																									
+document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
 document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
 const listEl = document.getElementById('storeList');																									
 listEl.innerHTML = '';																									
+																									
 data.stores.forEach(store => {																									
 const div = document.createElement('div');																									
 div.className = 'store-card';																									
 div.id = `card-${store.storeCode}`;																									
+																									
 div.innerHTML = `																									
-<div style="font-weight:bold;">No.${store.storeNo} ${store.storeName} (店番: ${store.storeCode})</div>																									
-<div style="font-size:18px; font-weight:bold; margin-top:4px;">																									
-投入数: <span id="count-${store.storeCode}">0</span> / ${store.qty} 個																									
+<div style="display: flex; align-items: center; gap: 12px;">																									
+<!-- 箱No.（並び順）を青色で強調表示 -->																									
+<div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
+<div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
+${store.storeNo}																									
+</div>																									
+																									
+<div style="flex-grow: 1;">																									
+<div style="font-size: 18px; font-weight: bold; color: #333;">${store.storeName}</div>																									
+<div style="font-size: 13px; color: #666; margin-top: 1px;">店番: ${store.storeCode}</div>																									
+<div style="font-size: 15px; margin-top: 4px;">																									
+投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
+</div>																									
+</div>																									
 </div>																									
 `;																									
 listEl.appendChild(div);																									
