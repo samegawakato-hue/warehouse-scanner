@@ -6,11 +6,42 @@
 <title>ピッキング管理</title>																									
 <script src="https://unpkg.com/@zxing/library@latest"></script>																									
 <style>																									
-body { font-family: -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 12px; }																									
+body {																									
+font-family: -apple-system, sans-serif;																									
+background: #f4f6f9;																									
+margin: 0;																									
+padding: 12px;																									
+padding-bottom: 140px; /* 下部固定ボタンと被らないための余白 */																									
+}																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
-.btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }																									
-.mode-btn { background: #e2e8f0; color: #334155; border: none; padding: 12px 5px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; }																									
-.mode-btn.active { background: #2563eb; color: #fff; }																									
+.top-btn-container { margin-bottom: 10px; }																									
+.bottom-btn-container {																									
+position: fixed;																									
+bottom: 0;																									
+left: 0;																									
+right: 0;																									
+background: #fff;																									
+padding: 10px 12px;																									
+box-shadow: 0 -2px 10px rgba(0,0,0,0.1);																									
+display: flex;																									
+flex-direction: column;																									
+gap: 8px;																									
+z-index: 1000;																									
+}																									
+.mode-btn-full {																									
+width: 100%;																									
+background: #e2e8f0;																									
+color: #334155;																									
+border: none;																									
+padding: 14px;																									
+border-radius: 8px;																									
+font-size: 15px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+text-align: center;																									
+box-sizing: border-box;																									
+}																									
+.mode-btn-full.active { background: #2563eb; color: #fff; }																									
 .btn-action { background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; }																									
 .status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; }																									
 .status.success { background: #dcfce7; color: #15803d; }																									
@@ -25,19 +56,19 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<div class="btn-grid">																									
-<button id="btnOutItem" class="mode-btn active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
-<button id="btnOutStore" class="mode-btn" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
-<button id="btnInItem" class="mode-btn" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
+<!-- 上部：入荷ボタン（横長） -->																									
+<div class="top-btn-container">																									
+<button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
+<!-- メイン操作エリア -->																									
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
 <button id="scanBtn" class="btn-action">📷 スキャン開始</button>																									
 																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
-<button onclick="stopScan()" class="mode-btn" style="width:100%; margin-top:5px;">キャンセリスキャン</button>																									
+<button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
 </div>																									
 																									
 <div id="status" class="status" style="display:none;"></div>																									
@@ -63,8 +94,14 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
+<!-- 下部固定：出荷関連ボタン（横長2段） -->																									
+<div class="bottom-btn-container">																									
+<button id="btnOutItem" class="mode-btn-full active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
+<button id="btnOutStore" class="mode-btn-full" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
+</div>																									
+																									
 <script>																									
-// ★環境に合わせてご自身のウェブアプリURLに書き換えてください																									
+// ★ご自身のWebアプリURLを設定してください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -79,7 +116,7 @@ document.getElementById('scanBtn').addEventListener('click', startScan);
 																									
 function switchMode(mode) {																									
 currentMode = mode;																									
-document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));																									
+document.querySelectorAll('.mode-btn-full').forEach(b => b.classList.remove('active'));																									
 document.getElementById('status').style.display = 'none';																									
 																									
 const titleEl = document.getElementById('modeTitle');																									
@@ -301,7 +338,6 @@ div.id = `card-${store.storeCode}`;
 																									
 div.innerHTML = `																									
 <div style="display: flex; align-items: center; gap: 12px;">																									
-<!-- 箱No.（並び順）を青色で強調表示 -->																									
 <div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
 <div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
 ${store.storeNo}																									
