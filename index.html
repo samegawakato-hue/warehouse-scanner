@@ -11,7 +11,7 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 140px; /* 下部固定ボタンと被らないための余白 */																									
+padding-bottom: 210px; /* 下部固定エリアが広がったため余白を拡大 */																									
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 .top-btn-container { margin-bottom: 10px; }																									
@@ -33,16 +33,27 @@ width: 100%;
 background: #e2e8f0;																									
 color: #334155;																									
 border: none;																									
-padding: 14px;																									
+padding: 12px;																									
 border-radius: 8px;																									
-font-size: 15px;																									
+font-size: 14px;																									
 font-weight: bold;																									
 cursor: pointer;																									
 text-align: center;																									
 box-sizing: border-box;																									
 }																									
 .mode-btn-full.active { background: #2563eb; color: #fff; }																									
-.btn-action { background: #10b981; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: bold; width: 100%; cursor: pointer; }																									
+.btn-action-full {																									
+width: 100%;																									
+background: #10b981;																									
+color: white;																									
+border: none;																									
+padding: 14px;																									
+border-radius: 8px;																									
+font-size: 16px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+box-sizing: border-box;																									
+}																									
 .status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; }																									
 .status.success { background: #dcfce7; color: #15803d; }																									
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
@@ -61,10 +72,9 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
-<!-- メイン操作エリア -->																									
+<!-- メイン表示エリア -->																									
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
-<button id="scanBtn" class="btn-action">📷 スキャン開始</button>																									
 																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
@@ -90,12 +100,13 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="inInputForm" style="display:none; align-items:center; gap:10px;">																									
 <label>入荷数量:</label>																									
 <input type="number" id="inQtyInput" value="1" min="1">																									
-<button class="btn-action" style="width:auto; padding:8px 16px;" onclick="submitInQty()">確定</button>																									
+<button class="btn-action-full" style="width:auto; padding:8px 16px;" onclick="submitInQty()">確定</button>																									
 </div>																									
 </div>																									
 																									
-<!-- 下部固定：出荷関連ボタン（横長2段） -->																									
+<!-- 下部固定：スキャン開始 ＋ 出荷関連ボタン（3段構成） -->																									
 <div class="bottom-btn-container">																									
+<button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
 <button id="btnOutItem" class="mode-btn-full active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
 <button id="btnOutStore" class="mode-btn-full" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
 </div>																									
