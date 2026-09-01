@@ -58,9 +58,10 @@ box-sizing: border-box;
 .status.success { background: #dcfce7; color: #15803d; }																									
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
 .big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
-.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; }																									
+.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
 .store-card.active { border-color: #2563eb; background: #eff6ff; }																									
 .store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
+.store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 video { width: 100%; border-radius: 8px; }																									
 input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
 </style>																									
@@ -105,7 +106,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- 画面最下部固定：緑の「スキャン開始」を下部エリアに配置 -->																									
+<!-- 画面最下部固定：ボタンエリア -->																									
 <div class="bottom-btn-container">																									
 <button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
 <button id="btnOutItem" class="mode-btn-full active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
@@ -219,7 +220,9 @@ data.stores.forEach(s => storeCounts[s.storeCode] = 0);
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
 stopScan();																									
-showStatus('1. 商品確認完了。「スキャン開始」を押して出荷店舗のバーコードをスキャンしてください', 'success');																									
+																									
+const nextStore = getNextRequiredStore();																									
+showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
 }																									
@@ -234,28 +237,42 @@ triggerError('通信エラー：接続できませんでした');
 document.body.appendChild(script);																									
 }																									
 																									
+// まだ完了していない最初の店舗（順番通りの次の店舗）を取得する関数																									
+function getNextRequiredStore() {																									
+if (!currentData || !currentData.stores) return null;																									
+return currentData.stores.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
+}																									
+																									
 function verifyStoreScan(storeCode) {																									
 if (!currentData) {																									
 triggerError('先に「出荷商品」をスキャンしてください');																									
 return;																									
 }																									
 																									
+const nextRequiredStore = getNextRequiredStore();																									
+																									
+if (!nextRequiredStore) {																									
+triggerError('すべての店舗へのピッキングが完了しています');																									
+return;																									
+}																									
+																									
+// 順番チェック：次の順番の店舗コードとスキャンされた店舗コードが一致しているか確認																									
+if (String(storeCode) !== String(nextRequiredStore.storeCode)) {																									
+// 対象外の店舗をスキャンした場合の警告																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(storeCode));																									
-if (!targetStore) {																									
+if (targetStore) {																									
+triggerError(`❌ 順序エラー！次は【${nextRequiredStore.storeName}】の箱をスキャンしてください！`);																									
+} else {																									
 triggerError('❌ 対象外の店舗箱です！');																									
+}																									
 return;																									
 }																									
 																									
 const currentCount = storeCounts[storeCode] || 0;																									
-if (currentCount >= targetStore.qty) {																									
-triggerError('⚠️ この店舗の必要個数は満たしています！別の店舗をスキャンしてください');																									
-return;																									
-}																									
-																									
 activeStoreCode = storeCode;																									
 currentMode = 'OUT_NEED';																									
-document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${targetStore.storeName})`;																									
-showStatus(`2. 店舗確認OK (箱No.${targetStore.storeNo} ${targetStore.storeName}): 「スキャン開始」を押して商品をあと ${targetStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${nextRequiredStore.storeName})`;																									
+showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をあと ${nextRequiredStore.qty - currentCount} 回スキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
@@ -269,7 +286,7 @@ const targetStore = currentData.stores.find(s => String(s.storeCode) === String(
 storeCounts[activeStoreCode]++;																									
 																									
 const count = storeCounts[activeStoreCode];																									
-updateStoreUI(activeStoreCode, count, targetStore.qty);																									
+updateStoreUI();																									
 																									
 stopScan(); // 1個スキャンごとにカメラ停止																									
 																									
@@ -284,7 +301,8 @@ switchMode('OUT_ITEM');
 showStatus('全店舗の出荷完了！「スキャン開始」を押して次の出荷商品をスキャンしてください', 'success');																									
 } else {																									
 switchMode('OUT_STORE');																									
-showStatus(`🎉 ${targetStore.storeName} への投入完了！「スキャン開始」を押して次の店舗のバーコードをスキャンしてください`, 'success');																									
+const nextStore = getNextRequiredStore();																									
+showStatus(`🎉 ${targetStore.storeName} への投入完了！次は【${nextStore.storeName}】のバーコードをスキャンしてください`, 'success');																									
 }																									
 } else {																									
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
@@ -366,16 +384,28 @@ ${store.storeNo}
 `;																									
 listEl.appendChild(div);																									
 });																									
+																									
+updateStoreUI();																									
 }																									
 																									
-function updateStoreUI(storeCode, count, max) {																									
-const card = document.getElementById(`card-${storeCode}`);																									
-document.getElementById(`count-${storeCode}`).innerText = count;																									
-if (count >= max) {																									
-card.className = 'store-card done';																									
+function updateStoreUI() {																									
+if (!currentData) return;																									
+																									
+const nextRequiredStore = getNextRequiredStore();																									
+																									
+currentData.stores.forEach(store => {																									
+const card = document.getElementById(`card-${store.storeCode}`);																									
+const count = storeCounts[store.storeCode] || 0;																									
+document.getElementById(`count-${store.storeCode}`).innerText = count;																									
+																									
+if (count >= store.qty) {																									
+card.className = 'store-card done'; // 完了済み																									
+} else if (nextRequiredStore && String(store.storeCode) === String(nextRequiredStore.storeCode)) {																									
+card.className = 'store-card next-target'; // 次にスキャンすべき対象（太枠強調）																									
 } else {																									
-card.className = 'store-card active';																									
+card.className = 'store-card'; // 待機中																									
 }																									
+});																									
 }																									
 																									
 function showStatus(msg, type) {																									
