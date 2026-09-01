@@ -11,7 +11,7 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 210px; /* 下部固定エリアが広がったため余白を拡大 */																									
+padding-bottom: 210px; /* 下部固定エリアの高さ分の余白 */																									
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 .top-btn-container { margin-bottom: 10px; }																									
@@ -76,6 +76,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
 																									
+<!-- カメラ表示エリア -->																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
 <button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
@@ -104,7 +105,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- 下部固定：スキャン開始 ＋ 出荷関連ボタン（3段構成） -->																									
+<!-- 画面最下部固定：緑の「スキャン開始」を下部エリアに配置 -->																									
 <div class="bottom-btn-container">																									
 <button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
 <button id="btnOutItem" class="mode-btn-full active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
