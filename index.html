@@ -6,7 +6,7 @@
 <title>出荷・入荷ナビ</title>																									
 <script src="https://unpkg.com/html5-qrcode"></script>																									
 <style>																									
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px 12px 340px 12px; background-color: #f3f4f6; color: #1f2937; }																									
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px 12px 280px 12px; background-color: #f3f4f6; color: #1f2937; }																									
 																									
 /* 上部：スキャン結果・ピッキング指示表示領域 */																									
 .card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 12px; }																									
@@ -14,7 +14,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .store-item { font-size: 18px; font-weight: bold; color: #1e3a8a; margin-bottom: 6px; }																									
 .qty-badge { background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 20px; font-weight: bold; }																									
 																									
-/* 操作パネル（位置を少し上げて下部バー被りを防止） */																									
+/* カメラ起動時の大画面上部固定エリア */																									
+#cameraContainer { display: none; width: 100%; margin-bottom: 16px; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }																									
+#reader { width: 100%; height: 320px; }																									
+#reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
+																									
+/* 下部操作パネル（ボタン群） */																									
 .bottom-panel { position: fixed; bottom: 70px; left: 12px; right: 12px; background: white; padding: 14px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); z-index: 1000; }																									
 																									
 /* ボタンデザイン */																									
@@ -27,18 +32,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 .mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }																									
 .mode-outbound { background: #dbeafe; color: #1e40af; }																									
 .mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
-																									
-/* カメラ枠の高さをコンパクトに制限 */																									
-#reader { width: 100%; border-radius: 8px; overflow: hidden; display: none; margin-bottom: 8px; max-height: 160px; }																									
-#reader video { object-fit: cover; max-height: 160px; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
+<!-- 上部：カメラ映像エリア（起動時のみ大画面で表示） -->																									
+<div id="cameraContainer">																									
+<div id="reader"></div>																									
+</div>																									
+																									
 <!-- スキャン結果・指示画面 -->																									
 <div id="resultArea" class="card" style="display: none;"></div>																									
 																									
-<!-- 操作パネル -->																									
+<!-- 下部：操作パネル -->																									
 <div class="bottom-panel">																									
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
@@ -50,12 +56,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 </div>																									
 </div>																									
 																									
-<!-- カメラエリア -->																									
-<div id="reader"></div>																									
-<button id="stopScanBtn" class="btn btn-danger" style="display: none;" onclick="stopScan()">⏹ スキャン停止</button>																									
-																									
 <!-- 操作ボタン -->																									
 <button id="startScanBtn" class="btn btn-green" onclick="startScan()">📷 スキャン開始</button>																									
+<button id="stopScanBtn" class="btn btn-danger" style="display: none;" onclick="stopScan()">⏹ スキャン停止</button>																									
 <button class="btn btn-gray" onclick="toggleMode()">🔄 モード切替</button>																									
 </div>																									
 																									
@@ -128,15 +131,18 @@ sortArea.style.display = "block";
 function startScan() {																									
 initAudio();																									
 document.getElementById('resultArea').style.display = 'none';																									
-document.getElementById('reader').style.display = 'block';																									
+document.getElementById('cameraContainer').style.display = 'block';																									
 document.getElementById('stopScanBtn').style.display = 'block';																									
 document.getElementById('startScanBtn').style.display = 'none';																									
+																									
+// カメラエリアへスムーズスクロール																									
+window.scrollTo({ top: 0, behavior: 'smooth' });																									
 																									
 if (!html5QrCode) {																									
 html5QrCode = new Html5Qrcode("reader");																									
 }																									
 																									
-const config = { fps: 10, qrbox: { width: 200, height: 110 } };																									
+const config = { fps: 10, qrbox: { width: 260, height: 160 } };																									
 																									
 html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)																									
 .catch(err => {																									
@@ -149,12 +155,12 @@ stopScan();
 function stopScan() {																									
 if (html5QrCode && html5QrCode.isScanning) {																									
 html5QrCode.stop().then(() => {																									
-document.getElementById('reader').style.display = 'none';																									
+document.getElementById('cameraContainer').style.display = 'none';																									
 document.getElementById('stopScanBtn').style.display = 'none';																									
 document.getElementById('startScanBtn').style.display = 'block';																									
 });																									
 } else {																									
-document.getElementById('reader').style.display = 'none';																									
+document.getElementById('cameraContainer').style.display = 'none';																									
 document.getElementById('stopScanBtn').style.display = 'none';																									
 document.getElementById('startScanBtn').style.display = 'block';																									
 }																									
