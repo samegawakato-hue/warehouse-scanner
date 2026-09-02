@@ -3,223 +3,445 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>出荷・入荷ナビ</title>																									
-<script src="https://unpkg.com/html5-qrcode"></script>																									
+<title>ピッキング管理</title>																									
+<script src="https://unpkg.com/@zxing/library@latest"></script>																									
 <style>																									
-body { font-family: sans-serif; margin: 0; padding: 10px; background: #f3f4f6; color: #1f2937; }																									
-.card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px; }																									
-#cameraContainer { display: none; width: 100%; margin-bottom: 10px; background: #000; border-radius: 12px; overflow: hidden; }																									
-#reader { width: 100%; height: 240px; }																									
-#reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
-.step-guide { background: #dbeafe; border-left: 5px solid #2563eb; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; border-radius: 4px; white-space: pre-wrap; }																									
-.store-card { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; }																									
-.store-active { border-color: #10b981; background: #ecfdf5; font-weight: bold; }																									
-.qty-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 6px; font-size: 16px; font-weight: bold; }																									
-.bottom-panel { position: fixed; bottom: 10px; left: 10px; right: 10px; background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 1000; }																									
-.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; margin-bottom: 6px; cursor: pointer; }																									
-.btn-green { background: #10b981; color: white; }																									
-.btn-gray { background: #6b7280; color: white; }																									
-.btn-danger { background: #ef4444; color: white; }																									
-.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }																									
-.mode-outbound { background: #dbeafe; color: #1e40af; }																									
-.mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
+body {																									
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;																									
+background: #f4f6f9;																									
+margin: 0;																									
+padding: 12px;																									
+padding-bottom: 210px;																									
+}																									
+.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
+.top-btn-container { margin-bottom: 10px; }																									
+.bottom-btn-container {																									
+position: fixed;																									
+bottom: 0;																									
+left: 0;																									
+right: 0;																									
+background: #fff;																									
+padding: 10px 12px;																									
+box-shadow: 0 -2px 10px rgba(0,0,0,0.1);																									
+display: flex;																									
+flex-direction: column;																									
+gap: 8px;																									
+z-index: 1000;																									
+}																									
+.mode-btn-full {																									
+width: 100%;																									
+background: #e2e8f0;																									
+color: #334155;																									
+border: none;																									
+padding: 12px;																									
+border-radius: 8px;																									
+font-size: 14px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+text-align: center;																									
+box-sizing: border-box;																									
+}																									
+.mode-btn-full.active { background: #2563eb; color: #fff; }																									
+.btn-action-full {																									
+width: 100%;																									
+background: #10b981;																									
+color: white;																									
+border: none;																									
+padding: 14px;																									
+border-radius: 8px;																									
+font-size: 16px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+box-sizing: border-box;																									
+}																									
+.status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; white-space: pre-wrap; }																									
+.status.success { background: #dcfce7; color: #15803d; }																									
+.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
+.big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
+.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
+.store-card.active { border-color: #2563eb; background: #eff6ff; }																									
+.store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
+.store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
+video { width: 100%; border-radius: 8px; background: #000; }																									
+input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<div id="cameraContainer"><div id="reader"></div></div>																									
-																									
-<div id="pickingArea" class="card" style="display:none; margin-bottom: 180px;">																									
-<div id="stepGuide" class="step-guide">① 商品をスキャンしてください</div>																									
-<div id="itemDetail"></div>																									
+<!-- 上部：入荷ボタン（横長） -->																									
+<div class="top-btn-container">																									
+<button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
-<div class="bottom-panel">																									
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">																									
-<div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
-<div id="sortOptionArea" style="font-size:12px;">																									
-<select id="sortOrder" onchange="resetPickingState()">																									
-<option value="false">正順 (1 → N)</option>																									
-<option value="true">逆順 (N → 1)</option>																									
-</select>																									
+<!-- メイン表示エリア -->																									
+<div class="card">																									
+<div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
+																									
+<!-- カメラ表示エリア -->																									
+<div id="videoContainer" style="display:none; margin-top:10px;">																									
+<video id="video"></video>																									
+<button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
+</div>																									
+																									
+<div id="status" class="status" style="display:none;"></div>																									
+</div>																									
+																									
+<div id="outArea" class="card" style="display:none;">																									
+<div style="text-align:center;">																									
+<h3 id="itemTitle" style="margin:0;">商品ピッキング</h3>																									
+<div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
+<div style="margin-top:6px;">本日出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
+</div>																									
+<hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
+<div id="storeList"></div>																									
+</div>																									
+																									
+<div id="inArea" class="card" style="display:none;">																									
+<h3>入荷登録</h3>																									
+<div id="inItemInfo" style="font-weight:bold; margin-bottom:10px;">商品をスキャンしてください</div>																									
+<div id="inInputForm" style="display:none; align-items:center; gap:10px;">																									
+<label>入荷数量:</label>																									
+<input type="number" id="inQtyInput" value="1" min="1">																									
+<button class="btn-action-full" style="width:auto; padding:8px 16px;" onclick="submitInQty()">確定</button>																									
 </div>																									
 </div>																									
-<button id="startScanBtn" class="btn btn-green" onclick="startScan()">📷 スキャン開始</button>																									
-<button id="stopScanBtn" class="btn btn-danger" style="display:none;" onclick="stopScan()">⏹ スキャン停止</button>																									
-<button class="btn btn-gray" onclick="toggleMode()">🔄 モード切替</button>																									
+																									
+<!-- 画面最下部固定：ボタンエリア -->																									
+<div class="bottom-btn-container">																									
+<button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
+<button id="btnOutItem" class="mode-btn-full active" onclick="switchMode('OUT_ITEM')">📦 出荷商品</button>																									
+<button id="btnOutStore" class="mode-btn-full" onclick="switchMode('OUT_STORE')">🏪 出荷店舗</button>																									
 </div>																									
 																									
 <script>																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
-let currentMode = "outbound", html5QrCode = null, audioCtx = null, isProcessing = false;																									
-let state = { step: 'WAIT_PRODUCT', data: null, storeIdx: 0, scannedQty: 0 };																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
-function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }																									
+const codeReader = new ZXing.BrowserMultiFormatReader();																									
+let currentMode = 'OUT_ITEM';																									
+let currentData = null;																									
+let activeStoreCode = null;																									
+let storeCounts = {};																									
+let isProcessing = false;																									
+let audioCtx = null;																									
+let currentInBarcode = "";																									
 																									
-function playSound(freq, type = 'sine', duration = 0.1) {																									
-initAudio();																									
-const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();																									
-osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);																									
-osc.connect(gain); gain.connect(audioCtx.destination);																									
-osc.start(); osc.stop(audioCtx.currentTime + duration);																									
+document.getElementById('scanBtn').addEventListener('click', startScan);																									
+																									
+function switchMode(mode) {																									
+currentMode = mode;																									
+document.querySelectorAll('.mode-btn-full').forEach(b => b.classList.remove('active'));																									
+document.getElementById('status').style.display = 'none';																									
+																									
+const titleEl = document.getElementById('modeTitle');																									
+if (mode === 'OUT_ITEM') {																									
+document.getElementById('btnOutItem').classList.add('active');																									
+titleEl.innerText = 'MODE: 出荷商品スキャン（総個数確認）';																									
+document.getElementById('inArea').style.display = 'none';																									
+} else if (mode === 'OUT_STORE') {																									
+document.getElementById('btnOutStore').classList.add('active');																									
+titleEl.innerText = 'MODE: 出荷店舗スキャン（箱の店番）';																									
+document.getElementById('inArea').style.display = 'none';																									
+} else if (mode === 'IN_ITEM') {																									
+document.getElementById('btnInItem').classList.add('active');																									
+titleEl.innerText = 'MODE: 入荷商品スキャン（個数手入力）';																									
+document.getElementById('inArea').style.display = 'block';																									
+document.getElementById('outArea').style.display = 'none';																									
 }																									
-const playSuccess = () => playSound(1760, 'sine', 0.1);																									
-const playBuzzer = () => playSound(120, 'sawtooth', 0.4);																									
-																									
-// エラー時はカメラを即停止してからアラートを出す																									
-function alertWithError(msg) {																									
-stopScan();																									
-playBuzzer();																									
-setTimeout(() => {																									
-alert(msg);																									
-isProcessing = false;																									
-}, 50);																									
-}																									
-																									
-function toggleMode() {																									
-stopScan(); resetPickingState();																									
-currentMode = (currentMode === "outbound") ? "inbound" : "outbound";																									
-const isOut = currentMode === "outbound";																									
-document.getElementById('modeDisplay').className = `mode-badge ${isOut ? 'mode-outbound' : 'mode-inbound'}`;																									
-document.getElementById('modeDisplay').innerText = isOut ? "MODE: 出荷ピッキング" : "MODE: 入荷処理";																									
-document.getElementById('sortOptionArea').style.display = isOut ? "block" : "none";																									
 }																									
 																									
 function startScan() {																									
-initAudio();																									
-document.getElementById('cameraContainer').style.display = 'block';																									
-document.getElementById('stopScanBtn').style.display = 'block';																									
-document.getElementById('startScanBtn').style.display = 'none';																									
-if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");																									
-html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 240, height: 150 } }, onScanSuccess)																									
-.catch(err => alertWithError("カメラ起動エラー: " + err));																									
+if (isProcessing) return;																									
+																									
+try {																									
+if (!audioCtx) {																									
+audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+}																									
+if (audioCtx.state === 'suspended') {																									
+audioCtx.resume();																									
+}																									
+} catch (e) {																									
+console.error('AudioInit Error:', e);																									
+}																									
+																									
+document.getElementById('videoContainer').style.display = 'block';																									
+codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
+if (result && !isProcessing) {																									
+isProcessing = true;																									
+handleScan(result.text);																									
+}																									
+});																									
 }																									
 																									
 function stopScan() {																									
-const finish = () => {																									
-document.getElementById('cameraContainer').style.display = 'none';																									
-document.getElementById('stopScanBtn').style.display = 'none';																									
-document.getElementById('startScanBtn').style.display = 'block';																									
+codeReader.reset();																									
+document.getElementById('videoContainer').style.display = 'none';																									
+isProcessing = false;																									
+}																									
+																									
+function handleScan(code) {																									
+if (currentMode === 'OUT_ITEM') {																									
+stopScan();																									
+fetchProductData(code);																									
+} else if (currentMode === 'OUT_STORE') {																									
+stopScan();																									
+verifyStoreScan(code);																									
+} else if (currentMode === 'OUT_NEED') {																									
+countNeedItemScan(code);																									
+} else if (currentMode === 'IN_ITEM') {																									
+stopScan();																									
+prepareInItem(code);																									
+}																									
+}																									
+																									
+function fetchProductData(barcode) {																									
+showStatus('商品データ取得中...', 'success');																									
+																									
+const callbackName = 'cb_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+triggerError('通信タイムアウト：GASの設定を確認してください');																									
+}, 10000);																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+}																									
+																									
+window[callbackName] = function(data) {																									
+cleanup();																									
+if (data.success) {																									
+currentData = data;																									
+storeCounts = {};																									
+data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
+																									
+renderProductData(data);																									
+switchMode('OUT_STORE');																									
+stopScan();																									
+																									
+const nextStore = getNextRequiredStore();																									
+showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
+} else {																									
+triggerError(data.error || '未登録の商品です');																									
+}																									
 };																									
-if (html5QrCode && html5QrCode.isScanning) html5QrCode.stop().then(finish).catch(finish);																									
-else finish();																									
+																									
+script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&callback=${callbackName}`;																									
+script.onerror = function() {																									
+cleanup();																									
+triggerError('通信エラー：接続できませんでした');																									
+};																									
+																									
+document.body.appendChild(script);																									
 }																									
 																									
-function onScanSuccess(decodedText) {																									
-if (isProcessing) return;																									
-isProcessing = true;																									
-const code = decodedText.trim();																									
+function getNextRequiredStore() {																									
+if (!currentData || !currentData.stores) return null;																									
+return currentData.stores.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
+}																									
 																									
-if (currentMode === "inbound") {																									
-stopScan(); playSuccess();																									
-const qtyStr = prompt(`【入荷入力】\nJAN: ${code}\n入荷個数:`, "1");																									
-isProcessing = false;																									
-if (!qtyStr) return;																									
-const qty = Number(qtyStr);																									
-if (isNaN(qty) || qty <= 0) return alertWithError("正しくない数量です");																									
-																									
-sendJsonp(`${GAS_URL}?action=inbound&barcode=${encodeURIComponent(code)}&qty=${qty}`, res => {																									
-if (res.success) { playSuccess(); alert(`【入荷完了】\nJAN: ${code}\n数量: ${qty}\n最新在庫: ${res.newStock}`); }																									
-else alertWithError("エラー: " + res.error);																									
-});																									
+function verifyStoreScan(storeCode) {																									
+if (!currentData) {																									
+triggerError('先に「出荷商品」をスキャンしてください');																									
 return;																									
 }																									
 																									
-// 出荷ピッキング																									
-if (state.step === 'WAIT_PRODUCT') {																									
-stopScan();																									
-const rev = document.getElementById('sortOrder').value;																									
-sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(code)}&reverse=${rev}`, res => {																									
-if (res.success) {																									
-playSuccess();																									
-state = { step: 'WAIT_STORE', data: res, storeIdx: 0, scannedQty: 0 };																									
-renderUI();																									
-isProcessing = false;																									
-} else alertWithError("❌ 対象の出荷商品が見つかりません: " + code);																									
-});																									
+const nextRequiredStore = getNextRequiredStore();																									
 																									
-} else if (state.step === 'WAIT_STORE') {																									
-const target = state.data.stores[state.storeIdx];																									
-const match = [target.storeCode, String(target.storeNo), target.storeName, `店舗${target.storeNo}`].includes(code);																									
-																									
-if (match) {																									
-stopScan(); playSuccess();																									
-state.step = 'WAIT_ITEMS';																									
-state.scannedQty = 0;																									
-renderUI();																									
-isProcessing = false;																									
-} else {																									
-alertWithError(`❌ 店舗スキャンエラー！\n指定の順番通り【店舗${target.storeNo} (${target.storeName})】をスキャンしてください。`);																									
-}																									
-																									
-} else if (state.step === 'WAIT_ITEMS') {																									
-const target = state.data.stores[state.storeIdx];																									
-																									
-if (code !== state.data.barcode) {																									
-alertWithError(`❌ 違う商品です！\n【${state.data.modelNumber}】をスキャンしてください。`);																									
+if (!nextRequiredStore) {																									
+triggerError('すべての店舗へのピッキングが完了しています');																									
 return;																									
 }																									
 																									
-state.scannedQty++;																									
-playSuccess();																									
-																									
-if (state.scannedQty >= target.qty) {																									
-state.storeIdx++;																									
-if (state.storeIdx < state.data.stores.length) {																									
-stopScan();																									
-state.step = 'WAIT_STORE';																									
-state.scannedQty = 0;																									
-renderUI();																									
-isProcessing = false;																									
+if (String(storeCode) !== String(nextRequiredStore.storeCode)) {																									
+const targetStore = currentData.stores.find(s => String(s.storeCode) === String(storeCode));																									
+if (targetStore) {																									
+triggerError(`❌ 順序エラー！次は【${nextRequiredStore.storeName}】の箱をスキャンしてください！`);																									
 } else {																									
+triggerError('❌ 対象外の店舗箱です！');																									
+}																									
+return;																									
+}																									
+																									
+const currentCount = storeCounts[storeCode] || 0;																									
+activeStoreCode = storeCode;																									
+currentMode = 'OUT_NEED';																									
+document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${nextRequiredStore.storeName})`;																									
+showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をあと ${nextRequiredStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+}																									
+																									
+function countNeedItemScan(barcode) {																									
+if (barcode !== currentData.barcode) {																									
 stopScan();																									
-sendJsonp(`${GAS_URL}?action=complete&rowIndex=${state.data.rowIndex}&barcode=${encodeURIComponent(state.data.barcode)}&qty=${state.data.totalQty}`, res => {																									
+triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
+return;																									
+}																									
+																									
+const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
+storeCounts[activeStoreCode]++;																									
+																									
+const count = storeCounts[activeStoreCode];																									
+updateStoreUI();																									
+																									
+stopScan();																									
+																									
+if (count >= targetStore.qty) {																									
+const isAllCompleted = currentData.stores.every(s => storeCounts[s.storeCode] >= s.qty);																									
+																									
+if (isAllCompleted) {																									
+showStatus(`🎉 全店舗へのピッキングが完了しました！`, 'success');																									
+																									
+// GASへ完了の記録を送信																									
+const callbackName = 'cb_complete_' + Date.now();																									
+const script = document.createElement('script');																									
+window[callbackName] = function(res) {																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+delete window[callbackName];																									
+};																									
+script.src = `${GAS_URL}?action=complete&rowIndex=${currentData.rowIndex}&barcode=${encodeURIComponent(currentData.barcode)}&qty=${currentData.totalQty}&callback=${callbackName}`;																									
+document.body.appendChild(script);																									
+																									
+currentData = null;																									
+document.getElementById('outArea').style.display = 'none';																									
+switchMode('OUT_ITEM');																									
+} else {																									
+switchMode('OUT_STORE');																									
+const nextStore = getNextRequiredStore();																									
+showStatus(`🎉 ${targetStore.storeName} への投入完了！次は【${nextStore.storeName}】のバーコードをスキャンしてください`, 'success');																									
+}																									
+} else {																									
+showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
+}																									
+}																									
+																									
+function prepareInItem(barcode) {																									
+currentInBarcode = barcode;																									
+document.getElementById('inItemInfo').innerText = `バーコード: ${barcode}`;																									
+document.getElementById('inInputForm').style.display = 'flex';																									
+showStatus('数量を入力して確定を押してください', 'success');																									
+}																									
+																									
+function submitInQty() {																									
+const qty = document.getElementById('inQtyInput').value;																									
+if (!qty || qty <= 0) {																									
+triggerError('正しくない数量です');																									
+return;																									
+}																									
+																									
+showStatus('入荷処理中...', 'success');																									
+																									
+const callbackName = 'cb_in_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+window[callbackName] = function(res) {																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+delete window[callbackName];																									
+																									
 if (res.success) {																									
-playSuccess();																									
-alert(`✅ ${state.data.modelNumber} の全店舗ピッキング完了！`);																									
-resetPickingState();																									
-} else alertWithError("記録エラー: " + res.error);																									
-});																									
-}																									
+document.getElementById('inInputForm').style.display = 'none';																									
+document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
+showStatus(`入荷登録完了: JAN ${currentInBarcode} / 数量: ${qty}個`, 'success');																									
 } else {																									
-renderUI();																									
-setTimeout(() => { isProcessing = false; }, 800);																									
+triggerError('入荷エラー: ' + (res.error || '処理に失敗しました'));																									
+}																									
+};																									
+																									
+script.src = `${GAS_URL}?action=inbound&barcode=${encodeURIComponent(currentInBarcode)}&qty=${qty}&callback=${callbackName}`;																									
+document.body.appendChild(script);																									
+}																									
+																									
+function triggerError(msg) {																									
+showStatus(msg, 'error');																									
+																									
+try {																									
+const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
+if (ctx.state === 'suspended') {																									
+ctx.resume();																									
+}																									
+																									
+const osc = ctx.createOscillator();																									
+const gain = ctx.createGain();																									
+																									
+osc.type = 'sawtooth';																									
+osc.frequency.setValueAtTime(880, ctx.currentTime);																									
+gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
+																									
+osc.connect(gain);																									
+gain.connect(ctx.destination);																									
+																									
+osc.start();																									
+osc.stop(ctx.currentTime + 0.4);																									
+} catch (e) {																									
+console.error('Audio Error:', e);																									
+}																									
+																									
+if (navigator.vibrate) {																									
+navigator.vibrate([200, 100, 200, 100, 400]);																									
 }																									
 }																									
-}																									
 																									
-function renderUI() {																									
-document.getElementById('pickingArea').style.display = 'block';																									
-const data = state.data, target = data.stores[state.storeIdx];																									
+function renderProductData(data) {																									
+document.getElementById('outArea').style.display = 'block';																									
+document.getElementById('itemSub').innerText = `品番: ${data.modelNumber || '未設定'} / JAN: ${data.barcode}`;																									
+document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
-document.getElementById('stepGuide').innerText = (state.step === 'WAIT_STORE')																									
-? `🏪 【ステップ 2/3】\n【店舗${target.storeNo}: ${target.storeName}】のバーコードをスキャンしてください`																									
-: `📦 【ステップ 3/3】\n商品【${data.modelNumber}】をスキャンしてください\n(${state.scannedQty} / ${target.qty} 個)`;																									
+const listEl = document.getElementById('storeList');																									
+listEl.innerHTML = '';																									
 																									
-let html = `<h3 style="margin:0;">品番: ${data.modelNumber}</h3><p style="font-size:12px; color:#6b7280; margin:0 0 8px 0;">JAN: ${data.barcode} / 総数: ${data.totalQty}個</p>`;																									
+data.stores.forEach(store => {																									
+const div = document.createElement('div');																									
+div.className = 'store-card';																									
+div.id = `card-${store.storeCode}`;																									
 																									
-data.stores.forEach((s, i) => {																									
-const active = i === state.storeIdx, done = i < state.storeIdx;																									
-html += `<div class="store-card ${active ? 'store-active' : ''}" style="${done ? 'opacity:0.4;' : ''}">																									
-<div>${done ? '✅ ' : ''}店舗${s.storeNo}：<b>${s.storeName}</b></div>																									
-<div style="margin-top:4px;">指示数: <b>${s.qty}個</b> ${active && state.step === 'WAIT_ITEMS' ? `➔ 済: <span class="qty-badge">${state.scannedQty}</span>` : ''}</div>																									
-</div>`;																									
+div.innerHTML = `																									
+<div style="display: flex; align-items: center; gap: 12px;">																									
+<div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
+<div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
+${store.storeNo}																									
+</div>																									
+																									
+<div style="flex-grow: 1;">																									
+<div style="font-size: 18px; font-weight: bold; color: #333;">${store.storeName}</div>																									
+<div style="font-size: 13px; color: #666; margin-top: 1px;">店番: ${store.storeCode}</div>																									
+<div style="font-size: 15px; margin-top: 4px;">																									
+投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
+</div>																									
+</div>																									
+</div>																									
+`;																									
+listEl.appendChild(div);																									
 });																									
-document.getElementById('itemDetail').innerHTML = html;																									
+																									
+updateStoreUI();																									
 }																									
 																									
-function resetPickingState() {																									
-state = { step: 'WAIT_PRODUCT', data: null, storeIdx: 0, scannedQty: 0 };																									
-document.getElementById('pickingArea').style.display = 'none';																									
-isProcessing = false;																									
+function updateStoreUI() {																									
+if (!currentData) return;																									
+																									
+const nextRequiredStore = getNextRequiredStore();																									
+																									
+currentData.stores.forEach(store => {																									
+const card = document.getElementById(`card-${store.storeCode}`);																									
+const count = storeCounts[store.storeCode] || 0;																									
+document.getElementById(`count-${store.storeCode}`).innerText = count;																									
+																									
+if (count >= store.qty) {																									
+card.className = 'store-card done';																									
+} else if (nextRequiredStore && String(store.storeCode) === String(nextRequiredStore.storeCode)) {																									
+card.className = 'store-card next-target';																									
+} else {																									
+card.className = 'store-card';																									
+}																									
+});																									
 }																									
 																									
-function sendJsonp(url, callback) {																									
-const cb = 'cb_' + Math.random().toString(36).substring(2, 9);																									
-const s = document.createElement('script');																									
-window[cb] = data => { delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); callback(data); };																									
-s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;																									
-document.body.appendChild(s);																									
+function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
 }																									
 </script>																									
 </body>																									
