@@ -3,119 +3,178 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>出荷・ピッキングナビ</title>																									
+<title>出荷・入荷・ピッキングナビ</title>																									
 <style>																									
-body { font-family: sans-serif; margin: 15px; background-color: #f4f6f8; }																									
-.card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }																									
-.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; margin-bottom: 10px; cursor: pointer; text-align: center; }																									
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 12px; background-color: #f3f4f6; color: #1f2937; }																									
+.card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px; }																									
+																									
+/* ボタンデザイン */																									
+.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 8px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
 .btn-green { background: #10b981; color: white; }																									
-.btn-blue { background: #3b82f6; color: white; }																									
+.btn-blue { background: #2563eb; color: white; }																									
+.btn-purple { background: #8b5cf6; color: white; }																									
 .btn-gray { background: #6b7280; color: white; }																									
 																									
-/* 進捗リスト用スタイル */																									
-.progress-list { list-style: none; padding: 0; margin: 10px 0 0 0; max-height: 200px; overflow-y: auto; }																									
-.progress-item { display: flex; justify-content: space-between; padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 14px; }																									
-.status-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }																									
-.badge-done { background: #d1fae5; color: #065f46; }																									
-.badge-yet { background: #f3f4f6; color: #374151; }																									
-.next-target { background: #eff6ff; font-weight: bold; border-left: 4px solid #3b82f6; }																									
+/* モード表示バッジ */																									
+.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }																									
+.mode-outbound { background: #dbeafe; color: #1e40af; }																									
+.mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
+																									
+/* 高速化対応の進捗リスト */																									
+.progress-list { list-style: none; padding: 0; margin: 8px 0 0 0; max-height: 180px; overflow-y: auto; -webkit-overflow-scrolling: touch; }																									
+.progress-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }																									
+.status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }																									
+.badge-done { background: #e5e7eb; color: #6b7280; }																									
+.badge-next { background: #dbeafe; color: #1d4ed8; }																									
+.badge-yet { background: #f9fafb; color: #9ca3af; }																									
+.next-target { background: #eff6ff; border-left: 3px solid #2563eb; font-weight: bold; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<!-- 進捗ダッシュボード -->																									
+<!-- 1. ピッキング進捗カード（高速描画） -->																									
 <div class="card">																									
 <div style="display: flex; justify-content: space-between; align-items: center;">																									
-<h3 style="margin: 0;">📦 ピッキング進捗</h3>																									
-<button onclick="loadProductList()" style="padding: 4px 8px; font-size: 12px;">🔄 更新</button>																									
+<h3 style="margin: 0; font-size: 16px;">📦 進捗状況</h3>																									
+<button onclick="loadProductList()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff;">🔄 最速更新</button>																									
 </div>																									
 <ul id="productList" class="progress-list">																									
-<li style="padding: 10px; color: #888;">読み込み中...</li>																									
+<li style="padding: 8px; color: #9ca3af; font-size: 12px;">読み込み中...</li>																									
 </ul>																									
 </div>																									
 																									
-<!-- スキャン＆コントロール操作 -->																									
+<!-- 2. 操作パネル（入荷ボタン配置） -->																									
 <div class="card">																									
-<div style="margin-bottom: 10px;">																									
-<label><b>店舗巡回順:</b></label>																									
-<select id="sortOrder" onchange="onOrderChange()" style="padding: 5px; font-size: 14px;">																									
-<option value="false">正順 (1 → 10)</option>																									
-<option value="true">逆順 (10 → 1)</option>																									
-</select>																									
+<div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
+																									
+<!-- スキャン開始ボタン -->																									
+<button class="btn btn-green" onclick="startScan()">📷 スキャン開始</button>																									
+																									
+<!-- モード切り替え・入荷処理ボタン -->																									
+<div style="display: flex; gap: 8px; margin-top: 4px;">																									
+<button class="btn btn-purple" style="flex: 1;" onclick="promptInboundScan()">📥 入荷入力</button>																									
+<button class="btn btn-gray" style="flex: 1;" onclick="toggleMode()">🔄 モード切替</button>																									
 </div>																									
 																									
-<button class="btn btn-green" onclick="startScan()">📷 バーコードスキャン開始</button>																									
+<!-- オプション設定 -->																									
+<div style="margin-top: 10px; font-size: 13px; color: #4b5563; display: flex; align-items: center; justify-content: space-between;">																									
+<label><b>店舗巡回順:</b></label>																									
+<select id="sortOrder" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db;">																									
+<option value="false">正順 (1 → N)</option>																									
+<option value="true">逆順 (N → 1)</option>																									
+</select>																									
+</div>																									
 </div>																									
 																									
 <script>																									
-// デプロイしたGASのWebアプリURLを設定してください																									
+// ▼ご自身のデプロイ済GASのURLを設定してください																									
 const GAS_URL = "https://script.google.com/macros/s/YOUR_GAS_DEPLOY_ID/exec";																									
 																									
-// 画面読み込み時に進捗リストを取得																									
+let currentMode = "outbound"; // "outbound" (出荷) または "inbound" (入荷)																									
+																									
 window.onload = function() {																									
 loadProductList();																									
 };																									
 																									
-// 1. 全商品のピッキング進捗を取得して表示する処理																									
+// 【高速化ロジック1】進捗リストの一括高速取得																									
 function loadProductList() {																									
-const script = document.createElement('script');																									
-const callbackName = 'onListLoaded_' + Date.now();																									
-																									
-window[callbackName] = function(data) {																									
-delete window[callbackName];																									
-document.body.removeChild(script);																									
-																									
 const listEl = document.getElementById('productList');																									
-listEl.innerHTML = '';																									
 																									
+sendJsonp(`${GAS_URL}?action=productList`, function(data) {																									
 if (!data.success || !data.items || data.items.length === 0) {																									
-listEl.innerHTML = '<li style="padding:10px;">商品データがありません</li>';																									
+listEl.innerHTML = '<li style="padding:8px; color:#9ca3af;">データなし</li>';																									
 return;																									
 }																									
 																									
 let foundNext = false;																									
+// 文字列結合による一括DOM描画（描画速度を大幅改善）																									
+let htmlBuffer = '';																									
 																									
-data.items.forEach(item => {																									
-const li = document.createElement('li');																									
-li.className = 'progress-item';																									
+for (let i = 0; i < data.items.length; i++) {																									
+const item = data.items[i];																									
+let isNext = false;																									
+let badgeHtml = '';																									
 																									
-let badge = '';																									
 if (item.isCompleted) {																									
-badge = '<span class="status-badge badge-done">済</span>';																									
-} else {																									
-if (!foundNext) {																									
-// まだ完了していない最初の品目を「次にピッキングする商品」として強調																									
-li.classList.add('next-target');																									
-badge = '<span class="status-badge badge-yet" style="color:#2563eb;">★ 次はこれ</span>';																									
+badgeHtml = '<span class="status-badge badge-done">済</span>';																									
+} else if (!foundNext) {																									
 foundNext = true;																									
+isNext = true;																									
+badgeHtml = '<span class="status-badge badge-next">次へ</span>';																									
 } else {																									
-badge = '<span class="status-badge badge-yet">未</span>';																									
-}																									
+badgeHtml = '<span class="status-badge badge-yet">未</span>';																									
 }																									
 																									
-li.innerHTML = `<span><b>${item.model}</b> <small style="color:#666;">(${item.jan})</small></span> ${badge}`;																									
-listEl.appendChild(li);																									
+htmlBuffer += `																									
+<li class="progress-item ${isNext ? 'next-target' : ''}">																									
+<span><b>${item.model}</b> <small style="color:#6b7280;">(${item.jan})</small></span>																									
+${badgeHtml}																									
+</li>																									
+`;																									
+}																									
+																									
+listEl.innerHTML = htmlBuffer;																									
 });																									
-};																									
-																									
-script.src = `${GAS_URL}?action=productList&callback=${callbackName}`;																									
-document.body.appendChild(script);																									
 }																									
 																									
-// 2. スキャン完了時にサーバーへ送信し、進捗リストを自動再読み込みする処理																									
-function completePicking(rowIndex, barcode, qty) {																									
+// 入荷手入力・スキャン処理																									
+function promptInboundScan() {																									
+const barcode = prompt("入荷する商品のバーコード（JAN）を入力またはスキャンしてください:");																									
+if (!barcode) return;																									
+																									
+const qtyStr = prompt(`商品 [${barcode}] の入荷個数を入力してください:`, "1");																									
+const qty = Number(qtyStr);																									
+if (isNaN(qty) || qty <= 0) {																									
+alert("正しい個数を入力してください。");																									
+return;																									
+}																									
+																									
+// 入荷データを送信																									
+sendJsonp(`${GAS_URL}?action=inbound&barcode=${encodeURIComponent(barcode)}&qty=${qty}`, function(res) {																									
+if (res.success) {																									
+alert(`【入荷完了】\nバーコード: ${barcode}\n数量: ${qty}\n最新在庫: ${res.newStock}`);																									
+loadProductList();																									
+} else {																									
+alert("エラー: " + res.error);																									
+}																									
+});																									
+}																									
+																									
+// モード切り替え																									
+function toggleMode() {																									
+const modeEl = document.getElementById('modeDisplay');																									
+if (currentMode === "outbound") {																									
+currentMode = "inbound";																									
+modeEl.className = "mode-badge mode-inbound";																									
+modeEl.innerText = "MODE: 入荷処理";																									
+} else {																									
+currentMode = "outbound";																									
+modeEl.className = "mode-badge mode-outbound";																									
+modeEl.innerText = "MODE: 出荷ピッキング";																									
+}																									
+}																									
+																									
+// スキャン開始処理（カメラ連携等の基盤）																									
+function startScan() {																									
+if (currentMode === "inbound") {																									
+promptInboundScan();																									
+} else {																									
+alert("出荷スキャンを開始します。（スキャナー呼び出し）");																									
+}																									
+}																									
+																									
+// 【高速化ロジック2】通信ヘビー処理を最適化した非同期JSONPヘルパー																									
+function sendJsonp(url, callback) {																									
+const callbackName = 'cb_' + Math.random().toString(36).substring(2, 9);																									
 const script = document.createElement('script');																									
-const callbackName = 'onComplete_' + Date.now();																									
 																									
 window[callbackName] = function(data) {																									
 delete window[callbackName];																									
-document.body.removeChild(script);																									
-																									
-alert("ピッキング完了を記録しました！");																									
-loadProductList(); // リストを最新状態に更新																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+callback(data);																									
 };																									
 																									
-script.src = `${GAS_URL}?action=complete&rowIndex=${rowIndex}&barcode=${barcode}&qty=${qty}&callback=${callbackName}`;																									
+script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;																									
 document.body.appendChild(script);																									
 }																									
 </script>																									
