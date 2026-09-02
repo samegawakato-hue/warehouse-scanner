@@ -6,46 +6,133 @@
 <title>出荷・入荷ナビ</title>																									
 <script src="https://unpkg.com/html5-qrcode"></script>																									
 <style>																									
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background-color: #f3f4f6; color: #1f2937; }																									
+body {																									
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;																									
+margin: 0;																									
+padding: 10px;																									
+background-color: #f3f4f6;																									
+color: #1f2937;																									
+}																									
 																									
-.card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 10px; }																									
+.card {																									
+background: white;																									
+padding: 12px;																									
+border-radius: 12px;																									
+box-shadow: 0 2px 4px rgba(0,0,0,0.08);																									
+margin-bottom: 10px;																									
+}																									
 																									
-#cameraContainer { display: none; width: 100%; margin-bottom: 10px; background: #000; border-radius: 12px; overflow: hidden; }																									
-#reader { width: 100%; height: 240px; }																									
-#reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
+#cameraContainer {																									
+display: none;																									
+width: 100%;																									
+margin-bottom: 10px;																									
+background: #000;																									
+border-radius: 12px;																									
+overflow: hidden;																									
+}																									
 																									
-.step-guide { background: #dbeafe; border-left: 5px solid #2563eb; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; border-radius: 4px; font-size: 15px; }																									
+#reader {																									
+width: 100%;																									
+height: 240px;																									
+}																									
 																									
-.store-card { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; }																									
-.store-active { border-color: #10b981; background: #ecfdf5; font-weight: bold; }																									
-.qty-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 6px; font-size: 16px; font-weight: bold; }																									
+#reader video {																									
+width: 100% !important;																									
+height: 100% !important;																									
+object-fit: cover !important;																									
+}																									
 																									
-.bottom-panel { position: fixed; bottom: 10px; left: 10px; right: 10px; background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 1000; }																									
+.step-guide {																									
+background: #dbeafe;																									
+border-left: 5px solid #2563eb;																									
+padding: 10px;																									
+margin-bottom: 10px;																									
+font-weight: bold;																									
+color: #1e40af;																									
+border-radius: 4px;																									
+font-size: 15px;																									
+white-space: pre-wrap;																									
+}																									
 																									
-.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 6px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
+.store-card {																									
+background: #f8fafc;																									
+border: 2px solid #cbd5e1;																									
+border-radius: 8px;																									
+padding: 10px;																									
+margin-top: 8px;																									
+}																									
+																									
+.store-active {																									
+border-color: #10b981;																									
+background: #ecfdf5;																									
+font-weight: bold;																									
+}																									
+																									
+.qty-badge {																									
+background: #ef4444;																									
+color: white;																									
+padding: 2px 8px;																									
+border-radius: 6px;																									
+font-size: 16px;																									
+font-weight: bold;																									
+}																									
+																									
+.bottom-panel {																									
+position: fixed;																									
+bottom: 10px;																									
+left: 10px;																									
+right: 10px;																									
+background: white;																									
+padding: 10px;																									
+border-radius: 14px;																									
+box-shadow: 0 4px 16px rgba(0,0,0,0.15);																									
+z-index: 1000;																									
+}																									
+																									
+.btn {																									
+display: block;																									
+width: 100%;																									
+padding: 12px;																									
+border: none;																									
+border-radius: 8px;																									
+font-weight: bold;																									
+font-size: 15px;																									
+margin-bottom: 6px;																									
+cursor: pointer;																									
+text-align: center;																									
+box-sizing: border-box;																									
+}																									
+																									
 .btn-green { background: #10b981; color: white; }																									
 .btn-gray { background: #6b7280; color: white; }																									
 .btn-danger { background: #ef4444; color: white; }																									
 																									
-.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }																									
+.mode-badge {																									
+display: inline-block;																									
+padding: 4px 10px;																									
+border-radius: 20px;																									
+font-size: 12px;																									
+font-weight: bold;																									
+}																									
+																									
 .mode-outbound { background: #dbeafe; color: #1e40af; }																									
 .mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<!-- カメラ領域 -->																									
+<!-- カメラエリア -->																									
 <div id="cameraContainer">																									
 <div id="reader"></div>																									
 </div>																									
 																									
-<!-- 指示・ステータス表示 -->																									
+<!-- ガイド・指示表示エリア -->																									
 <div id="pickingArea" class="card" style="display: none; margin-bottom: 180px;">																									
 <div id="stepGuide" class="step-guide">① 商品をスキャンしてください</div>																									
 <div id="itemDetail"></div>																									
 </div>																									
 																									
-<!-- 操作パネル -->																									
+<!-- 下部操作パネル -->																									
 <div class="bottom-panel">																									
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
@@ -68,7 +155,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUd
 let currentMode = "outbound";																									
 let html5QrCode = null;																									
 let audioCtx = null;																									
-let isProcessing = false; // 連続読み取り防止用フラグ																									
+let isProcessing = false;																									
 																									
 let pickingState = {																									
 step: 'WAIT_PRODUCT', // WAIT_PRODUCT -> WAIT_STORE -> WAIT_ITEMS																									
@@ -163,7 +250,7 @@ document.getElementById('startScanBtn').style.display = 'block';
 }																									
 																									
 function onScanSuccess(decodedText) {																									
-if (isProcessing) return; // 重複処理ロック																									
+if (isProcessing) return;																									
 isProcessing = true;																									
 																									
 const code = decodedText.trim();																									
@@ -213,7 +300,6 @@ alert("❌ 対象の出荷商品が見つかりません: " + code);
 // Step 2: 店舗スキャン																									
 const targetStore = pickingState.productData.stores[pickingState.currentStoreIndex];																									
 																									
-// 店舗判定（店舗コード / 店舗名 / 店舗番号 いずれかとの一致判定）																									
 const isStoreMatch = (																									
 code === targetStore.storeCode ||																									
 code === String(targetStore.storeNo) ||																									
@@ -222,7 +308,7 @@ code.includes(`店舗${targetStore.storeNo}`)
 );																									
 																									
 if (isStoreMatch) {																									
-stopScan(); // ✅ 店舗スキャン成功時も一旦カメラを止めて確認させる																									
+stopScan();																									
 playSuccessSound();																									
 pickingState.step = 'WAIT_ITEMS';																									
 pickingState.scannedQty = 0;																									
@@ -230,7 +316,7 @@ renderPickingUI();
 isProcessing = false;																									
 } else {																									
 playBuzzerSound();																									
-alert(`❌ 店舗スキャンエラー！\nスキャンしたコード: [ ${code} ]\n指定順序【店舗${targetStore.storeNo} (${targetStore.storeName})】のバーコードをスキャンしてください。`);																									
+alert(`❌ 店舗スキャンエラー！\n読み取った値: [ ${code} ]\n指定順序【店舗${targetStore.storeNo} (${targetStore.storeName})】をスキャンしてください。`);																									
 setTimeout(() => { isProcessing = false; }, 1500);																									
 }																									
 																									
@@ -249,18 +335,15 @@ pickingState.scannedQty++;
 playSuccessSound();																									
 																									
 if (pickingState.scannedQty >= targetStore.qty) {																									
-// 該当店舗のピッキング完了																									
 pickingState.currentStoreIndex++;																									
 																									
 if (pickingState.currentStoreIndex < pickingState.productData.stores.length) {																									
-// 次の店舗スキャンへ（カメラ停止）																									
 stopScan();																									
 pickingState.step = 'WAIT_STORE';																									
 pickingState.scannedQty = 0;																									
 renderPickingUI();																									
 isProcessing = false;																									
 } else {																									
-// 全店舗のピッキング完了																									
 stopScan();																									
 sendJsonp(`${GAS_URL}?action=complete&rowIndex=${pickingState.productData.rowIndex}&barcode=${encodeURIComponent(pickingState.productData.barcode)}&qty=${pickingState.productData.totalQty}`, function(res) {																									
 isProcessing = false;																									
@@ -276,7 +359,7 @@ alert("記録エラー: " + res.error);
 }																									
 } else {																									
 renderPickingUI();																									
-setTimeout(() => { isProcessing = false; }, 800); // 連続カウント用ウェイト																									
+setTimeout(() => { isProcessing = false; }, 800);																									
 }																									
 }																									
 }																									
