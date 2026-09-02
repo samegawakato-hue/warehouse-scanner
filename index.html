@@ -11,7 +11,7 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 230px; /* 下部固定エリアの高さ分の余白 */																									
+padding-bottom: 230px;																									
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 .top-btn-container { margin-bottom: 10px; }																									
@@ -78,16 +78,13 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- 上部：入荷ボタン（横長） -->																									
 <div class="top-btn-container">																									
 <button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
-<!-- メイン表示エリア -->																									
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
 																									
-<!-- カメラ表示エリア -->																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
 <button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
@@ -116,9 +113,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- 画面最下部固定：ボタンエリア -->																									
 <div class="bottom-btn-container">																									
-<!-- 順序選択ドロップダウン -->																									
 <select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
@@ -223,22 +218,7 @@ function fetchProductData(barcode) {
 showStatus('商品データ取得中...', 'success');																									
 																									
 const isReverse = document.getElementById('sortOrder').value;																									
-const callbackName = 'cb_' + Date.now();																									
-const script = document.createElement('script');																									
-																									
-const timer = setTimeout(() => {																									
-cleanup();																									
-triggerError('通信タイムアウト：GASの設定を確認してください');																									
-}, 10000);																									
-																									
-function cleanup() {																									
-clearTimeout(timer);																									
-if (window[callbackName]) delete window[callbackName];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
-}																									
-																									
-window[callbackName] = function(data) {																									
-cleanup();																									
+sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`, data => {																									
 if (data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
@@ -253,18 +233,9 @@ showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${n
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
 }																									
-};																									
-																									
-script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
-script.onerror = function() {																									
-cleanup();																									
-triggerError('通信エラー：接続できませんでした');																									
-};																									
-																									
-document.body.appendChild(script);																									
+});																									
 }																									
 																									
-// まだ完了していない最初の店舗（順番通りの次の店舗）を取得する関数																									
 function getNextRequiredStore() {																									
 if (!currentData || !currentData.stores) return null;																									
 return currentData.stores.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
@@ -283,7 +254,6 @@ triggerError('すべての店舗へのピッキングが完了しています');
 return;																									
 }																									
 																									
-// 順番チェック：店番(storeCode)、店舗No(storeNo)、店舗名(storeName)のいずれかが合致するか確認																									
 const scanned = String(storeCode).trim();																									
 const match = [																									
 String(nextRequiredStore.storeCode).trim(),																									
@@ -316,9 +286,14 @@ storeCounts[activeStoreCode]++;
 const count = storeCounts[activeStoreCode];																									
 updateStoreUI();																									
 																									
-stopScan(); // 1個スキャンごとにカメラ停止																									
+stopScan();																									
 																									
+// 指示数に達したらGASに完了を送信してスプレッドシートの背景色をグレー化																									
 if (count >= targetStore.qty) {																									
+sendJsonp(`${GAS_URL}?action=complete&barcode=${encodeURIComponent(currentData.barcode)}&storeCode=${encodeURIComponent(targetStore.storeCode)}`, res => {																									
+console.log('背景色変更完了:', res);																									
+});																									
+																									
 const isAllCompleted = currentData.stores.every(s => storeCounts[s.storeCode] >= s.qty);																									
 																									
 if (isAllCompleted) {																									
@@ -429,20 +404,25 @@ const count = storeCounts[store.storeCode] || 0;
 document.getElementById(`count-${store.storeCode}`).innerText = count;																									
 																									
 if (count >= store.qty) {																									
-card.className = 'store-card done'; // 完了済み																									
+card.className = 'store-card done';																									
 } else if (nextRequiredStore && String(store.storeCode) === String(nextRequiredStore.storeCode)) {																									
-card.className = 'store-card next-target'; // 次にスキャンすべき対象（太枠強調）																									
+card.className = 'store-card next-target';																									
 } else {																									
-card.className = 'store-card'; // 待機中																									
+card.className = 'store-card';																									
 }																									
 });																									
 }																									
 																									
-function showStatus(msg, type) {																									
-const el = document.getElementById('status');																									
-el.innerText = msg;																									
-el.className = `status ${type}`;																									
-el.style.display = 'block';																									
+function sendJsonp(url, callback) {																									
+const cb = 'cb_' + Math.random().toString(36).substring(2, 9);																									
+const script = document.createElement('script');																									
+window[cb] = data => {																									
+delete window[cb];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+callback(data);																									
+};																									
+script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;																									
+document.body.appendChild(script);																									
 }																									
 </script>																									
 </body>																									
