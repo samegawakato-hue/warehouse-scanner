@@ -6,53 +6,55 @@
 <title>出荷・入荷ナビ</title>																									
 <script src="https://unpkg.com/html5-qrcode"></script>																									
 <style>																									
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 12px 12px 280px 12px; background-color: #f3f4f6; color: #1f2937; }																									
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background-color: #f3f4f6; color: #1f2937; }																									
 																									
-.card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 12px; }																									
+.card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 10px; }																									
 																									
-/* カメラエリア */																									
-#cameraContainer { display: none; width: 100%; margin-bottom: 12px; background: #000; border-radius: 12px; overflow: hidden; }																									
-#reader { width: 100%; height: 280px; }																									
+/* 上部：カメラ表示エリア */																									
+#cameraContainer { display: none; width: 100%; margin-bottom: 10px; background: #000; border-radius: 12px; overflow: hidden; }																									
+#reader { width: 100%; height: 240px; }																									
 #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
 																									
-/* 下部操作パネル */																									
-.bottom-panel { position: fixed; bottom: 70px; left: 12px; right: 12px; background: white; padding: 14px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); z-index: 1000; }																									
+/* スキャン状態案内ヘッダー */																									
+.step-guide { background: #dbeafe; border-left: 5px solid #2563eb; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; border-radius: 4px; font-size: 15px; }																									
 																									
-.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; margin-bottom: 8px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
+/* 店舗カード */																									
+.store-card { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; }																									
+.store-active { border-color: #10b981; background: #ecfdf5; font-weight: bold; }																									
+.qty-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 6px; font-size: 16px; font-weight: bold; }																									
+																									
+/* 下部操作ボタン固定 */																									
+.bottom-panel { position: fixed; bottom: 10px; left: 10px; right: 10px; background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 1000; }																									
+																									
+.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 6px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
 .btn-green { background: #10b981; color: white; }																									
 .btn-gray { background: #6b7280; color: white; }																									
 .btn-danger { background: #ef4444; color: white; }																									
 																									
-.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }																									
+.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }																									
 .mode-outbound { background: #dbeafe; color: #1e40af; }																									
 .mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
-																									
-/* ステータス・指示ガイド表示 */																									
-.step-guide { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; }																									
-.store-card { background: #f8fafc; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px; margin-top: 8px; }																									
-.store-active { border-color: #10b981; background: #ecfdf5; }																									
-.qty-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 6px; font-size: 18px; font-weight: bold; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<!-- カメラエリア（上部） -->																									
+<!-- 1. カメラ領域（最上部） -->																									
 <div id="cameraContainer">																									
 <div id="reader"></div>																									
 </div>																									
 																									
-<!-- スキャン指示・進行状況カード（メイン） -->																									
-<div id="pickingArea" class="card" style="display: none;">																									
+<!-- 2. ピッキング指示領域 -->																									
+<div id="pickingArea" class="card" style="display: none; margin-bottom: 180px;">																									
 <div id="stepGuide" class="step-guide">① 商品をスキャンしてください</div>																									
 <div id="itemDetail"></div>																									
 </div>																									
 																									
-<!-- 下部操作パネル -->																									
+<!-- 3. 下部固定パネル -->																									
 <div class="bottom-panel">																									
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">																									
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
-<div id="sortOptionArea" style="font-size: 12px; color: #4b5563;">																									
-<select id="sortOrder" style="padding: 2px 6px; border-radius: 4px; border: 1px solid #d1d5db;" onchange="resetPickingState()">																									
+<div id="sortOptionArea" style="font-size: 12px;">																									
+<select id="sortOrder" style="padding: 2px 4px; border-radius: 4px; border: 1px solid #ccc;" onchange="resetPickingState()">																									
 <option value="false">正順 (1 → N)</option>																									
 <option value="true">逆順 (N → 1)</option>																									
 </select>																									
@@ -71,7 +73,7 @@ let currentMode = "outbound";
 let html5QrCode = null;																									
 let audioCtx = null;																									
 																									
-// ピッキング管理ステート																									
+// ステート管理																									
 let pickingState = {																									
 step: 'WAIT_PRODUCT', // WAIT_PRODUCT -> WAIT_STORE -> WAIT_ITEMS																									
 productData: null,																									
@@ -85,7 +87,6 @@ audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 }																									
 }																									
 																									
-// ⭕ 成功音（ポーン）																									
 function playSuccessSound() {																									
 initAudio();																									
 const now = audioCtx.currentTime;																									
@@ -98,18 +99,17 @@ osc.start(now);
 osc.stop(now + 0.1);																									
 }																									
 																									
-// ❌ 強力ブザー音（警告音）																									
 function playBuzzerSound() {																									
 initAudio();																									
 const now = audioCtx.currentTime;																									
 const osc = audioCtx.createOscillator();																									
 const gain = audioCtx.createGain();																									
 osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(120, now); // 低音鋸波																									
+osc.frequency.setValueAtTime(120, now);																									
 osc.connect(gain);																									
 gain.connect(audioCtx.destination);																									
 osc.start(now);																									
-osc.stop(now + 0.5); // 0.5秒間ぶーっと鳴らす																									
+osc.stop(now + 0.5);																									
 }																									
 																									
 function toggleMode() {																									
@@ -142,7 +142,7 @@ if (!html5QrCode) {
 html5QrCode = new Html5Qrcode("reader");																									
 }																									
 																									
-const config = { fps: 15, qrbox: { width: 260, height: 160 } };																									
+const config = { fps: 10, qrbox: { width: 240, height: 150 } };																									
 																									
 html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)																									
 .catch(err => {																									
@@ -166,14 +166,12 @@ document.getElementById('startScanBtn').style.display = 'block';
 }																									
 }																									
 																									
-// メイン・スキャン受信制御																									
 function onScanSuccess(decodedText) {																									
 const code = decodedText.trim();																									
 																									
 if (currentMode === "inbound") {																									
-// --- 入荷モード ---																									
-playSuccessSound();																									
 stopScan();																									
+playSuccessSound();																									
 const qtyStr = prompt(`【入荷入力】\nJAN: ${code}\n入荷個数を入力:`, "1");																									
 if (!qtyStr) return;																									
 const qty = Number(qtyStr);																									
@@ -193,7 +191,8 @@ return;
 																									
 // --- 出荷モード ---																									
 if (pickingState.step === 'WAIT_PRODUCT') {																									
-// Step 1: 最初の「商品スキャン」																									
+// Step 1: 最初の商品スキャン																									
+stopScan(); // 一旦カメラ停止																									
 const isReverse = document.getElementById('sortOrder').value;																									
 sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(code)}&reverse=${isReverse}`, function(res) {																									
 if (res.success) {																									
@@ -204,58 +203,56 @@ pickingState.scannedQty = 0;
 pickingState.step = 'WAIT_STORE';																									
 renderPickingUI();																									
 } else {																									
-playBuzzerSound(); // 商品なしブザー																									
+playBuzzerSound();																									
 alert("❌ 対象の出荷商品が見つかりません: " + code);																									
 }																									
 });																									
 																									
 } else if (pickingState.step === 'WAIT_STORE') {																									
-// Step 2: 「店舗スキャン」																									
+// Step 2: 店舗スキャン																									
 const targetStore = pickingState.productData.stores[pickingState.currentStoreIndex];																									
 																									
-// 店舗バーコード一致判定（店舗コード または 店舗番号）																									
+// 店舗判定（店舗コード または 店舗番号）																									
 if (code === targetStore.storeCode || code === String(targetStore.storeNo)) {																									
 playSuccessSound();																									
 pickingState.step = 'WAIT_ITEMS';																									
 pickingState.scannedQty = 0;																									
 renderPickingUI();																									
 } else {																									
-// 順序間違い・違う店舗の場合ブザー																									
 playBuzzerSound();																									
-alert(`❌ 店舗スキャンエラー！\n指定の順番通り【店舗${targetStore.storeNo} (${targetStore.storeName})】をスキャンしてください。`);																									
+alert(`❌ 店舗スキャンエラー！\n指定の順番通り【店舗${targetStore.storeNo} (${targetStore.storeName})】のバーコードをスキャンしてください。`);																									
 }																									
 																									
 } else if (pickingState.step === 'WAIT_ITEMS') {																									
-// Step 3: 「商品を個数分再スキャン」																									
+// Step 3: 出荷個数分 商品スキャン																									
 const targetStore = pickingState.productData.stores[pickingState.currentStoreIndex];																									
 																									
-// 違う商品をスキャンした場合ブザー																									
 if (code !== pickingState.productData.barcode) {																									
 playBuzzerSound();																									
 alert(`❌ 違う商品です！\n【${pickingState.productData.modelNumber}】をスキャンしてください。`);																									
 return;																									
 }																									
 																									
-// 商品合致																									
 pickingState.scannedQty++;																									
 playSuccessSound();																									
 																									
 if (pickingState.scannedQty >= targetStore.qty) {																									
-// 該当店舗の必要数が揃った																									
+// 店舗分完了																									
 pickingState.currentStoreIndex++;																									
 																									
 if (pickingState.currentStoreIndex < pickingState.productData.stores.length) {																									
-// 次の店舗へ																									
+// 次の店舗へ（カメラは止めて店舗スキャン待ちへ）																									
+stopScan();																									
 pickingState.step = 'WAIT_STORE';																									
 pickingState.scannedQty = 0;																									
 renderPickingUI();																									
 } else {																									
-// 全店舗完了 ➔ GAS側でスプレッドシート完了（グレーアウト）更新																									
+// 全店舗完了																									
 stopScan();																									
 sendJsonp(`${GAS_URL}?action=complete&rowIndex=${pickingState.productData.rowIndex}&barcode=${encodeURIComponent(pickingState.productData.barcode)}&qty=${pickingState.productData.totalQty}`, function(res) {																									
 if (res.success) {																									
 playSuccessSound();																									
-alert(`✅ ${pickingState.productData.modelNumber} の全店舗ピッキングが完了しました！`);																									
+alert(`✅ ${pickingState.productData.modelNumber} の全店舗ピッキング完了！`);																									
 resetPickingState();																									
 } else {																									
 playBuzzerSound();																									
@@ -269,7 +266,6 @@ renderPickingUI();
 }																									
 }																									
 																									
-// 画面状態の描画																									
 function renderPickingUI() {																									
 const area = document.getElementById('pickingArea');																									
 const guide = document.getElementById('stepGuide');																									
@@ -281,15 +277,15 @@ const targetStore = data.stores[pickingState.currentStoreIndex];
 																									
 let guideText = "";																									
 if (pickingState.step === 'WAIT_STORE') {																									
-guideText = `🏪 次の【店舗${targetStore.storeNo}: ${targetStore.storeName}】のQR/バーコードをスキャンしてください`;																									
+guideText = `🏪 次に【店舗${targetStore.storeNo}: ${targetStore.storeName}】をスキャンしてください\n（「スキャン開始」を押してカメラを起動）`;																									
 } else if (pickingState.step === 'WAIT_ITEMS') {																									
 guideText = `📦 商品【${data.modelNumber}】をスキャンしてください (${pickingState.scannedQty} / ${targetStore.qty} 個)`;																									
 }																									
 guide.innerText = guideText;																									
 																									
 let html = `																									
-<h3 style="margin:0 0 4px 0;">📦 ${data.modelNumber}</h3>																									
-<p style="font-size:12px; color:#6b7280; margin:0 0 8px 0;">JAN: ${data.barcode} / 総数: ${data.totalQty}個</p>																									
+<h3 style="margin:0 0 4px 0;">品番: ${data.modelNumber}</h3>																									
+<p style="font-size:12px; color:#6b7280; margin:0 0 8px 0;">JAN: ${data.barcode} / 総出荷数: ${data.totalQty}個</p>																									
 `;																									
 																									
 data.stores.forEach((s, idx) => {																									
@@ -298,12 +294,12 @@ const isDone = (idx < pickingState.currentStoreIndex);
 																									
 html += `																									
 <div class="store-card ${isActive ? 'store-active' : ''}" style="${isDone ? 'opacity:0.4;' : ''}">																									
-<div style="font-weight:bold;">																									
-${isDone ? '✅ ' : ''}店舗${s.storeNo}：${s.storeName}																									
+<div style="font-size:16px;">																									
+${isDone ? '✅ ' : ''}店舗${s.storeNo}：<b>${s.storeName}</b>																									
 </div>																									
-<div>																									
+<div style="margin-top:4px;">																									
 指示数: <b>${s.qty}個</b>																									
-${isActive && pickingState.step === 'WAIT_ITEMS' ? `➔ <b>スキャン済: <span class="qty-badge">${pickingState.scannedQty}</span> 個</b>` : ''}																									
+${isActive && pickingState.step === 'WAIT_ITEMS' ? `➔ スキャン済: <span class="qty-badge">${pickingState.scannedQty}</span> 個` : ''}																									
 </div>																									
 </div>																									
 `;																									
