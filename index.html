@@ -12,7 +12,6 @@ body { font-family: sans-serif; margin: 0; padding: 10px; background: #f3f4f6; c
 #reader { width: 100%; height: 240px; }																									
 #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
 																									
-/* ステータス・案内エリア */																									
 .step-guide { background: #dbeafe; border-left: 5px solid #2563eb; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; border-radius: 4px; white-space: pre-wrap; font-size: 15px; }																									
 .step-guide.error { background: #fee2e2; border-left: 5px solid #ef4444; color: #dc2626; }																									
 																									
@@ -34,7 +33,6 @@ body { font-family: sans-serif; margin: 0; padding: 10px; background: #f3f4f6; c
 <div id="cameraContainer"><div id="reader"></div></div>																									
 																									
 <div id="pickingArea" class="card" style="display:none; margin-bottom: 180px;">																									
-<!-- 案内・エラー表示領域 -->																									
 <div id="stepGuide" class="step-guide">① 商品をスキャンしてください</div>																									
 <div id="itemDetail"></div>																									
 </div>																									
@@ -71,10 +69,9 @@ osc.start(); osc.stop(audioCtx.currentTime + duration);
 const playSuccess = () => playSound(1760, 'sine', 0.1);																									
 const playBuzzer = () => playSound(120, 'sawtooth', 0.4);																									
 																									
-// ポップアップを出さず、ブザー音＋案内枠の赤色表示でエラーを伝える																									
 function triggerError(msg) {																									
 playBuzzer();																									
-stopScan(); // エラー発生時もカメラを閉じて再「スキャン開始」を促す																									
+stopScan();																									
 const guide = document.getElementById('stepGuide');																									
 guide.innerText = msg;																									
 guide.classList.add('error');																									
@@ -117,7 +114,6 @@ if (isProcessing) return;
 isProcessing = true;																									
 const code = decodedText.trim();																									
 																									
-// 入荷モード																									
 if (currentMode === "inbound") {																									
 stopScan(); playSuccess();																									
 const qtyStr = prompt(`【入荷入力】\nJAN: ${code}\n入荷個数:`, "1");																									
@@ -132,7 +128,7 @@ else triggerError("⚠️ エラー: " + res.error);
 return;																									
 }																									
 																									
-// 出荷モード：① 商品スキャン																									
+// 出荷ピッキング: ① 商品スキャン																									
 if (state.step === 'WAIT_PRODUCT') {																									
 stopScan();																									
 const rev = document.getElementById('sortOrder').value;																									
@@ -146,7 +142,7 @@ triggerError("❌ 対象の出荷商品が見つかりません:\n" + code);
 }																									
 });																									
 																									
-// 出荷モード：② 店舗箱スキャン																									
+// 出荷ピッキング: ② 店舗スキャン																									
 } else if (state.step === 'WAIT_STORE') {																									
 stopScan();																									
 const target = state.data.stores[state.storeIdx];																									
@@ -161,13 +157,13 @@ renderUI();
 triggerError(`❌ 店舗スキャンエラー！\n指定の【店舗${target.storeNo} (${target.storeName})】をスキャンしてください`);																									
 }																									
 																									
-// 出荷モード：③ 投入個数スキャン（1個ずつ）																									
+// 出荷ピッキング: ③ 個数スキャン																									
 } else if (state.step === 'WAIT_ITEMS') {																									
 stopScan();																									
 const target = state.data.stores[state.storeIdx];																									
 																									
 if (code !== state.data.barcode) {																									
-triggerError(`❌ 違う商品です！\n正しい商品【${state.data.modelNumber}】をスキャンしてください`);																									
+triggerError(`❌ 違う商品です！\n【${state.data.modelNumber}】をスキャンしてください`);																									
 return;																									
 }																									
 																									
@@ -200,7 +196,7 @@ document.getElementById('pickingArea').style.display = 'block';
 const data = state.data, target = data.stores[state.storeIdx];																									
 const guide = document.getElementById('stepGuide');																									
 																									
-guide.classList.remove('error'); // エラー表示解除																									
+guide.classList.remove('error');																									
 guide.innerText = (state.step === 'WAIT_STORE')																									
 ? `🏪 【ステップ 2/3】\n【店舗${target.storeNo}: ${target.storeName}】のバーコードをスキャンしてください`																									
 : `📦 【ステップ 3/3】\n商品【${data.modelNumber}】をスキャンしてください\n(投入済み: ${state.scannedQty} / 必要数: ${target.qty} 個)`;																									
