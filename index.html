@@ -66,7 +66,9 @@ osc.start(); osc.stop(audioCtx.currentTime + duration);
 const playSuccess = () => playSound(1760, 'sine', 0.1);																									
 const playBuzzer = () => playSound(120, 'sawtooth', 0.4);																									
 																									
+// エラー時はカメラを即停止してからアラートを出す																									
 function alertWithError(msg) {																									
+stopScan();																									
 playBuzzer();																									
 setTimeout(() => {																									
 alert(msg);																									
@@ -164,14 +166,12 @@ playSuccess();
 if (state.scannedQty >= target.qty) {																									
 state.storeIdx++;																									
 if (state.storeIdx < state.data.stores.length) {																									
-// 次の店舗へスキャン移行（カメラ停止）																									
 stopScan();																									
 state.step = 'WAIT_STORE';																									
 state.scannedQty = 0;																									
 renderUI();																									
 isProcessing = false;																									
 } else {																									
-// 全店舗完了																									
 stopScan();																									
 sendJsonp(`${GAS_URL}?action=complete&rowIndex=${state.data.rowIndex}&barcode=${encodeURIComponent(state.data.barcode)}&qty=${state.data.totalQty}`, res => {																									
 if (res.success) {																									
