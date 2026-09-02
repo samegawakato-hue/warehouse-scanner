@@ -10,20 +10,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 																									
 .card { background: white; padding: 12px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 10px; }																									
 																									
-/* 上部：カメラ表示エリア */																									
 #cameraContainer { display: none; width: 100%; margin-bottom: 10px; background: #000; border-radius: 12px; overflow: hidden; }																									
 #reader { width: 100%; height: 240px; }																									
 #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }																									
 																									
-/* スキャン状態案内ヘッダー */																									
 .step-guide { background: #dbeafe; border-left: 5px solid #2563eb; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #1e40af; border-radius: 4px; font-size: 15px; }																									
 																									
-/* 店舗カード */																									
 .store-card { background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; }																									
 .store-active { border-color: #10b981; background: #ecfdf5; font-weight: bold; }																									
 .qty-badge { background: #ef4444; color: white; padding: 2px 8px; border-radius: 6px; font-size: 16px; font-weight: bold; }																									
 																									
-/* 下部操作ボタン固定 */																									
 .bottom-panel { position: fixed; bottom: 10px; left: 10px; right: 10px; background: white; padding: 10px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); z-index: 1000; }																									
 																									
 .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 6px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
@@ -38,18 +34,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 </head>																									
 <body>																									
 																									
-<!-- 1. カメラ領域（最上部） -->																									
+<!-- カメラ領域 -->																									
 <div id="cameraContainer">																									
 <div id="reader"></div>																									
 </div>																									
 																									
-<!-- 2. ピッキング指示領域 -->																									
+<!-- 指示・ステータス表示 -->																									
 <div id="pickingArea" class="card" style="display: none; margin-bottom: 180px;">																									
 <div id="stepGuide" class="step-guide">① 商品をスキャンしてください</div>																									
 <div id="itemDetail"></div>																									
 </div>																									
 																									
-<!-- 3. 下部固定パネル -->																									
+<!-- 操作パネル -->																									
 <div class="bottom-panel">																									
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
@@ -72,8 +68,8 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUd
 let currentMode = "outbound";																									
 let html5QrCode = null;																									
 let audioCtx = null;																									
+let isProcessing = false; // 連続読み取り防止用フラグ																									
 																									
-// ステート管理																									
 let pickingState = {																									
 step: 'WAIT_PRODUCT', // WAIT_PRODUCT -> WAIT_STORE -> WAIT_ITEMS																									
 productData: null,																									
@@ -167,12 +163,16 @@ document.getElementById('startScanBtn').style.display = 'block';
 }																									
 																									
 function onScanSuccess(decodedText) {																									
+if (isProcessing) return; // 重複処理ロック																									
+isProcessing = true;																									
+																									
 const code = decodedText.trim();																									
 																									
 if (currentMode === "inbound") {																									
 stopScan();																									
 playSuccessSound();																									
 const qtyStr = prompt(`【入荷入力】\nJAN: ${code}\n入荷個数を入力:`, "1");																									
+isProcessing = false;																									
 if (!qtyStr) return;																									
 const qty = Number(qtyStr);																									
 if (isNaN(qty) || qty <= 0) { playBuzzerSound(); alert("正しくない数量です"); return; }																									
@@ -192,9 +192,10 @@ return;
 // --- 出荷モード ---																									
 if (pickingState.step === 'WAIT_PRODUCT') {																									
 // Step 1: 最初の商品スキャン																									
-stopScan(); // 一旦カメラ停止																									
+stopScan();																									
 const isReverse = document.getElementById('sortOrder').value;																									
 sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(code)}&reverse=${isReverse}`, function(res) {																									
+isProcessing = false;																									
 if (res.success) {																									
 playSuccessSound();																									
 pickingState.productData = res;																									
@@ -212,24 +213,35 @@ alert("❌ 対象の出荷商品が見つかりません: " + code);
 // Step 2: 店舗スキャン																									
 const targetStore = pickingState.productData.stores[pickingState.currentStoreIndex];																									
 																									
-// 店舗判定（店舗コード または 店舗番号）																									
-if (code === targetStore.storeCode || code === String(targetStore.storeNo)) {																									
+// 店舗判定（店舗コード / 店舗名 / 店舗番号 いずれかとの一致判定）																									
+const isStoreMatch = (																									
+code === targetStore.storeCode ||																									
+code === String(targetStore.storeNo) ||																									
+code === targetStore.storeName ||																									
+code.includes(`店舗${targetStore.storeNo}`)																									
+);																									
+																									
+if (isStoreMatch) {																									
+stopScan(); // ✅ 店舗スキャン成功時も一旦カメラを止めて確認させる																									
 playSuccessSound();																									
 pickingState.step = 'WAIT_ITEMS';																									
 pickingState.scannedQty = 0;																									
 renderPickingUI();																									
+isProcessing = false;																									
 } else {																									
 playBuzzerSound();																									
-alert(`❌ 店舗スキャンエラー！\n指定の順番通り【店舗${targetStore.storeNo} (${targetStore.storeName})】のバーコードをスキャンしてください。`);																									
+alert(`❌ 店舗スキャンエラー！\nスキャンしたコード: [ ${code} ]\n指定順序【店舗${targetStore.storeNo} (${targetStore.storeName})】のバーコードをスキャンしてください。`);																									
+setTimeout(() => { isProcessing = false; }, 1500);																									
 }																									
 																									
 } else if (pickingState.step === 'WAIT_ITEMS') {																									
-// Step 3: 出荷個数分 商品スキャン																									
+// Step 3: 出荷個数分の商品スキャン																									
 const targetStore = pickingState.productData.stores[pickingState.currentStoreIndex];																									
 																									
 if (code !== pickingState.productData.barcode) {																									
 playBuzzerSound();																									
 alert(`❌ 違う商品です！\n【${pickingState.productData.modelNumber}】をスキャンしてください。`);																									
+setTimeout(() => { isProcessing = false; }, 1500);																									
 return;																									
 }																									
 																									
@@ -237,22 +249,24 @@ pickingState.scannedQty++;
 playSuccessSound();																									
 																									
 if (pickingState.scannedQty >= targetStore.qty) {																									
-// 店舗分完了																									
+// 該当店舗のピッキング完了																									
 pickingState.currentStoreIndex++;																									
 																									
 if (pickingState.currentStoreIndex < pickingState.productData.stores.length) {																									
-// 次の店舗へ（カメラは止めて店舗スキャン待ちへ）																									
+// 次の店舗スキャンへ（カメラ停止）																									
 stopScan();																									
 pickingState.step = 'WAIT_STORE';																									
 pickingState.scannedQty = 0;																									
 renderPickingUI();																									
+isProcessing = false;																									
 } else {																									
-// 全店舗完了																									
+// 全店舗のピッキング完了																									
 stopScan();																									
 sendJsonp(`${GAS_URL}?action=complete&rowIndex=${pickingState.productData.rowIndex}&barcode=${encodeURIComponent(pickingState.productData.barcode)}&qty=${pickingState.productData.totalQty}`, function(res) {																									
+isProcessing = false;																									
 if (res.success) {																									
 playSuccessSound();																									
-alert(`✅ ${pickingState.productData.modelNumber} の全店舗ピッキング完了！`);																									
+alert(`✅ ${pickingState.productData.modelNumber} の全店舗ピッキングが完了しました！`);																									
 resetPickingState();																									
 } else {																									
 playBuzzerSound();																									
@@ -262,6 +276,7 @@ alert("記録エラー: " + res.error);
 }																									
 } else {																									
 renderPickingUI();																									
+setTimeout(() => { isProcessing = false; }, 800); // 連続カウント用ウェイト																									
 }																									
 }																									
 }																									
@@ -277,9 +292,9 @@ const targetStore = data.stores[pickingState.currentStoreIndex];
 																									
 let guideText = "";																									
 if (pickingState.step === 'WAIT_STORE') {																									
-guideText = `🏪 次に【店舗${targetStore.storeNo}: ${targetStore.storeName}】をスキャンしてください\n（「スキャン開始」を押してカメラを起動）`;																									
+guideText = `🏪 【ステップ 2/3】\n【店舗${targetStore.storeNo}: ${targetStore.storeName}】のバーコードをスキャンしてください\n（「スキャン開始」を押すとカメラが起動します）`;																									
 } else if (pickingState.step === 'WAIT_ITEMS') {																									
-guideText = `📦 商品【${data.modelNumber}】をスキャンしてください (${pickingState.scannedQty} / ${targetStore.qty} 個)`;																									
+guideText = `📦 【ステップ 3/3】\n商品【${data.modelNumber}】をスキャンしてください\n(現在: ${pickingState.scannedQty} / 必要数: ${targetStore.qty} 個)`;																									
 }																									
 guide.innerText = guideText;																									
 																									
@@ -295,7 +310,7 @@ const isDone = (idx < pickingState.currentStoreIndex);
 html += `																									
 <div class="store-card ${isActive ? 'store-active' : ''}" style="${isDone ? 'opacity:0.4;' : ''}">																									
 <div style="font-size:16px;">																									
-${isDone ? '✅ ' : ''}店舗${s.storeNo}：<b>${s.storeName}</b>																									
+${isDone ? '✅ 完了 - ' : ''}店舗${s.storeNo}：<b>${s.storeName}</b>																									
 </div>																									
 <div style="margin-top:4px;">																									
 指示数: <b>${s.qty}個</b>																									
@@ -311,6 +326,7 @@ detail.innerHTML = html;
 function resetPickingState() {																									
 pickingState = { step: 'WAIT_PRODUCT', productData: null, currentStoreIndex: 0, scannedQty: 0 };																									
 document.getElementById('pickingArea').style.display = 'none';																									
+isProcessing = false;																									
 }																									
 																									
 function sendJsonp(url, callback) {																									
