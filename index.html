@@ -35,7 +35,7 @@ body { font-family: sans-serif; margin: 0; padding: 10px; background: #f3f4f6; c
 </div>																									
 																									
 <div class="bottom-panel">																									
-<div style="display:flex; justify-between; align-items:center; margin-bottom:8px;">																									
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
 <div id="sortOptionArea" style="font-size:12px;">																									
 <select id="sortOrder" onchange="resetPickingState()">																									
@@ -66,7 +66,6 @@ osc.start(); osc.stop(audioCtx.currentTime + duration);
 const playSuccess = () => playSound(1760, 'sine', 0.1);																									
 const playBuzzer = () => playSound(120, 'sawtooth', 0.4);																									
 																									
-// ブザーを鳴らしてからアラートを出す専用関数																									
 function alertWithError(msg) {																									
 playBuzzer();																									
 setTimeout(() => {																									
@@ -165,12 +164,14 @@ playSuccess();
 if (state.scannedQty >= target.qty) {																									
 state.storeIdx++;																									
 if (state.storeIdx < state.data.stores.length) {																									
+// 次の店舗へスキャン移行（カメラ停止）																									
 stopScan();																									
 state.step = 'WAIT_STORE';																									
 state.scannedQty = 0;																									
 renderUI();																									
 isProcessing = false;																									
 } else {																									
+// 全店舗完了																									
 stopScan();																									
 sendJsonp(`${GAS_URL}?action=complete&rowIndex=${state.data.rowIndex}&barcode=${encodeURIComponent(state.data.barcode)}&qty=${state.data.totalQty}`, res => {																									
 if (res.success) {																									
