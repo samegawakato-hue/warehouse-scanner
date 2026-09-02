@@ -69,7 +69,6 @@ color: #334155;
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
 .big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
 .store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
-.store-card.active { border-color: #2563eb; background: #eff6ff; }																									
 .store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 video { width: 100%; border-radius: 8px; }																									
@@ -124,7 +123,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★ご自身のWebアプリURLを設定してください																									
+// 画像で取得した最新のGAS WebアプリURL																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -219,7 +218,7 @@ showStatus('商品データ取得中...', 'success');
 																									
 const isReverse = document.getElementById('sortOrder').value;																									
 sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`, data => {																									
-if (data.success) {																									
+if (data && data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
@@ -231,7 +230,7 @@ stopScan();
 const nextStore = getNextRequiredStore();																									
 showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 } else {																									
-triggerError(data.error || '未登録の商品です');																									
+triggerError((data && data.error) ? data.error : '対象の出荷データが見つかりません');																									
 }																									
 });																									
 }																									
@@ -288,7 +287,6 @@ updateStoreUI();
 																									
 stopScan();																									
 																									
-// 指示数に達したらGASに完了を送信してスプレッドシートの背景色をグレー化																									
 if (count >= targetStore.qty) {																									
 sendJsonp(`${GAS_URL}?action=complete&barcode=${encodeURIComponent(currentData.barcode)}&storeCode=${encodeURIComponent(targetStore.storeCode)}`, res => {																									
 console.log('背景色変更完了:', res);																									
@@ -324,6 +322,13 @@ alert(`入荷登録完了: ${qty} 個`);
 document.getElementById('inInputForm').style.display = 'none';																									
 document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
 showStatus('入荷登録が完了しました', 'success');																									
+}																									
+																									
+function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.style.display = 'block';																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
 }																									
 																									
 function triggerError(msg) {																									
@@ -416,12 +421,28 @@ card.className = 'store-card';
 function sendJsonp(url, callback) {																									
 const cb = 'cb_' + Math.random().toString(36).substring(2, 9);																									
 const script = document.createElement('script');																									
+																									
+const timer = setTimeout(() => {																									
+delete window[cb];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+triggerError('通信タイムアウト: GASのアクセス権限（アクセスできるユーザー＝全員）を確認してください');																									
+}, 10000);																									
+																									
 window[cb] = data => {																									
+clearTimeout(timer);																									
 delete window[cb];																									
 if (script.parentNode) script.parentNode.removeChild(script);																									
 callback(data);																									
 };																									
+																									
 script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;																									
+script.onerror = () => {																									
+clearTimeout(timer);																									
+delete window[cb];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+triggerError('通信エラー: GASのアクセス権限を確認してください');																									
+};																									
+																									
 document.body.appendChild(script);																									
 }																									
 </script>																									
