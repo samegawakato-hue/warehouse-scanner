@@ -95,7 +95,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
 <h3 id="itemTitle" style="margin:0;">商品ピッキング</h3>																									
-<div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
+<div id="itemSub" style="color:#64748b; font-size:13px; font-weight:bold; margin-top:2px;"></div>																									
 <div style="margin-top:6px;">本日出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
 </div>																									
 <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
@@ -123,7 +123,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// 画像で取得した最新のGAS WebアプリURL																									
+// ★ここにご自身のWebアプリURLを貼り付けてください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -228,7 +228,7 @@ switchMode('OUT_STORE');
 stopScan();																									
 																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
+showStatus(`1. 商品確認完了。【${data.itemCode}】\n次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 } else {																									
 triggerError((data && data.error) ? data.error : '対象の出荷データが見つかりません');																									
 }																									
@@ -363,7 +363,8 @@ navigator.vibrate([200, 100, 200, 100, 400]);
 																									
 function renderProductData(data) {																									
 document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
+document.getElementById('itemTitle').innerText = data.itemCode ? `型番: ${data.itemCode}` : '商品ピッキング';																									
+document.getElementById('itemSub').innerText = `JAN: ${data.barcode}`;																									
 document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
 const listEl = document.getElementById('storeList');																									
@@ -425,7 +426,7 @@ const script = document.createElement('script');
 const timer = setTimeout(() => {																									
 delete window[cb];																									
 if (script.parentNode) script.parentNode.removeChild(script);																									
-triggerError('通信タイムアウト: GASのアクセス権限（アクセスできるユーザー＝全員）を確認してください');																									
+triggerError('通信タイムアウト: GASからの応答がありません');																									
 }, 10000);																									
 																									
 window[cb] = data => {																									
@@ -440,7 +441,7 @@ script.onerror = () => {
 clearTimeout(timer);																									
 delete window[cb];																									
 if (script.parentNode) script.parentNode.removeChild(script);																									
-triggerError('通信エラー: GASのアクセス権限を確認してください');																									
+triggerError('通信エラー: ネットワーク接続を確認してください');																									
 };																									
 																									
 document.body.appendChild(script);																									
