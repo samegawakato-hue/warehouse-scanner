@@ -123,7 +123,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★ここにご自身のWebアプリURLを貼り付けてください																									
+// ★ご自身のWebアプリURL																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -221,13 +221,30 @@ sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reve
 if (data && data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
-data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
+																									
+// ★スプレッドシート上でグレー(isCompleted: true)になっている店舗はカウントを最初から満了(s.qty)にする																									
+data.stores.forEach(s => {																									
+if (s.isCompleted) {																									
+storeCounts[s.storeCode] = s.qty;																									
+} else {																									
+storeCounts[s.storeCode] = 0;																									
+}																									
+});																									
 																									
 renderProductData(data);																									
+																									
+const nextStore = getNextRequiredStore();																									
+																									
+// すべての店舗が既にグレー（完了）の場合																									
+if (!nextStore) {																									
+showStatus(`【${data.itemCode}】の全店舗の指示は完了済みです。次の商品をスキャンしてください。`, 'success');																									
+switchMode('OUT_ITEM');																									
+return;																									
+}																									
+																									
 switchMode('OUT_STORE');																									
 stopScan();																									
 																									
-const nextStore = getNextRequiredStore();																									
 showStatus(`1. 商品確認完了。【${data.itemCode}】\n次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 } else {																									
 triggerError((data && data.error) ? data.error : '対象の出荷データが見つかりません');																									
