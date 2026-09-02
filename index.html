@@ -4,52 +4,47 @@
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
 <title>出荷・入荷ナビ</title>																									
+<!-- HTML5 QR Code Scanner Library -->																									
+<script src="https://unpkg.com/html5-qrcode"></script>																									
 <style>																									
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 12px; background-color: #f3f4f6; color: #1f2937; }																									
-.card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px; }																									
-.btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 15px; margin-bottom: 8px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
+.card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 12px; }																									
+																									
+/* ボタンデザイン */																									
+.btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 10px; font-weight: bold; font-size: 16px; margin-bottom: 10px; cursor: pointer; text-align: center; box-sizing: border-box; }																									
 .btn-green { background: #10b981; color: white; }																									
-.btn-purple { background: #8b5cf6; color: white; }																									
 .btn-gray { background: #6b7280; color: white; }																									
-.mode-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }																									
+.btn-danger { background: #ef4444; color: white; }																									
+																									
+/* モード表示バッジ */																									
+.mode-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-bottom: 12px; }																									
 .mode-outbound { background: #dbeafe; color: #1e40af; }																									
 .mode-inbound { background: #f3e8ff; color: #6b21a8; }																									
-.progress-list { list-style: none; padding: 0; margin: 8px 0 0 0; max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; }																									
-.progress-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 6px; border-bottom: 1px solid #f3f4f6; font-size: 13px; }																									
-.status-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; }																									
-.badge-done { background: #e5e7eb; color: #6b7280; }																									
-.badge-next { background: #dbeafe; color: #1d4ed8; }																									
-.badge-yet { background: #f9fafb; color: #9ca3af; }																									
-.next-target { background: #eff6ff; border-left: 3px solid #2563eb; font-weight: bold; }																									
+																									
+/* カメラエリア */																									
+#reader { width: 100%; border-radius: 8px; overflow: hidden; display: none; margin-bottom: 12px; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<!-- ピッキング進捗カード -->																									
-<div class="card">																									
-<div style="display: flex; justify-content: space-between; align-items: center;">																									
-<h3 style="margin: 0; font-size: 16px;">📦 進捗状況</h3>																									
-<button onclick="loadProductList()" style="padding: 4px 10px; font-size: 12px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff;">🔄 最新情報に更新</button>																									
-</div>																									
-<ul id="productList" class="progress-list">																									
-<li style="padding: 8px; color: #9ca3af; font-size: 12px;">読み込み中...</li>																									
-</ul>																									
-</div>																									
-																									
-<!-- 操作エリア -->																									
+<!-- メイン操作エリア -->																									
 <div class="card">																									
 <div id="modeDisplay" class="mode-badge mode-outbound">MODE: 出荷ピッキング</div>																									
 																									
-<button class="btn btn-green" onclick="startScan()">📷 スキャン開始</button>																									
+<!-- カメラ表示エリア -->																									
+<div id="reader"></div>																									
+<button id="stopScanBtn" class="btn btn-danger" style="display: none;" onclick="stopScan()">⏹ スキャン停止</button>																									
 																									
-<div style="display: flex; gap: 8px; margin-top: 4px;">																									
-<button class="btn btn-purple" style="flex: 1;" onclick="promptInboundScan()">📥 入荷入力</button>																									
-<button class="btn btn-gray" style="flex: 1;" onclick="toggleMode()">🔄 モード切替</button>																									
-</div>																									
+<!-- スキャン開始ボタン（すぐカメラ起動） -->																									
+<button id="startScanBtn" class="btn btn-green" onclick="startScan()">📷 スキャン開始</button>																									
 																									
-<div style="margin-top: 10px; font-size: 13px; color: #4b5563; display: flex; align-items: center; justify-content: space-between;">																									
+<!-- モード切り替えボタン -->																									
+<button class="btn btn-gray" onclick="toggleMode()">🔄 モード切替</button>																									
+																									
+<!-- 店舗巡回順オプション -->																									
+<div id="sortOptionArea" style="margin-top: 14px; font-size: 14px; color: #4b5563; display: flex; align-items: center; justify-content: space-between;">																									
 <label><b>店舗巡回順:</b></label>																									
-<select id="sortOrder" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #d1d5db;">																									
+<select id="sortOrder" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #d1d5db; font-size: 14px;">																									
 <option value="false">正順 (1 → N)</option>																									
 <option value="true">逆順 (N → 1)</option>																									
 </select>																									
@@ -57,98 +52,115 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 </div>																									
 																									
 <script>																									
-// 最新のGAS URLを設定済み																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
-let currentMode = "outbound";																									
 																									
-window.onload = function() {																									
-loadProductList();																									
-};																									
+let currentMode = "outbound"; // "outbound" (出荷) または "inbound" (入荷)																									
+let html5QrCode = null;																									
 																									
-// 1. 進捗取得																									
-function loadProductList() {																									
-const listEl = document.getElementById('productList');																									
-																									
-sendJsonp(`${GAS_URL}?action=productList`, function(data) {																									
-if (!data.success || !data.items || data.items.length === 0) {																									
-listEl.innerHTML = '<li style="padding:8px; color:#9ca3af;">データが見つかりません</li>';																									
-return;																									
+// 1. モード切り替え処理																									
+function toggleMode() {																									
+if (html5QrCode && html5QrCode.isScanning) {																									
+stopScan();																									
 }																									
 																									
-let foundNext = false;																									
-let htmlBuffer = '';																									
+const modeEl = document.getElementById('modeDisplay');																									
+const sortArea = document.getElementById('sortOptionArea');																									
 																									
-for (let i = 0; i < data.items.length; i++) {																									
-const item = data.items[i];																									
-let isNext = false;																									
-let badgeHtml = '';																									
-																									
-if (item.isCompleted) {																									
-badgeHtml = '<span class="status-badge badge-done">済</span>';																									
-} else if (!foundNext) {																									
-foundNext = true;																									
-isNext = true;																									
-badgeHtml = '<span class="status-badge badge-next">次へ</span>';																									
+if (currentMode === "outbound") {																									
+currentMode = "inbound";																									
+modeEl.className = "mode-badge mode-inbound";																									
+modeEl.innerText = "MODE: 入荷処理";																									
+sortArea.style.display = "none"; // 入荷時は巡回順を非表示																									
 } else {																									
-badgeHtml = '<span class="status-badge badge-yet">未</span>';																									
+currentMode = "outbound";																									
+modeEl.className = "mode-badge mode-outbound";																									
+modeEl.innerText = "MODE: 出荷ピッキング";																									
+sortArea.style.display = "flex";																									
+}																									
 }																									
 																									
-htmlBuffer += `																									
-<li class="progress-item ${isNext ? 'next-target' : ''}">																									
-<span><b>${item.model}</b> <small style="color:#6b7280;">(${item.jan})</small></span>																									
-${badgeHtml}																									
-</li>																									
-`;																									
+// 2. スキャン開始（即座にカメラ起動）																									
+function startScan() {																									
+document.getElementById('reader').style.display = 'block';																									
+document.getElementById('stopScanBtn').style.display = 'block';																									
+document.getElementById('startScanBtn').style.display = 'none';																									
+																									
+if (!html5QrCode) {																									
+html5QrCode = new Html5Qrcode("reader");																									
 }																									
 																									
-listEl.innerHTML = htmlBuffer;																									
+const config = { fps: 10, qrbox: { width: 250, height: 150 } };																									
+																									
+// アウトカメラを起動																									
+html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)																									
+.catch(err => {																									
+alert("カメラの起動に失敗しました: " + err);																									
+stopScan();																									
 });																									
 }																									
 																									
-// 入荷処理																									
-function promptInboundScan() {																									
-const barcode = prompt("入荷する商品のJANコードを入力してください:");																									
-if (!barcode) return;																									
+// 3. スキャン停止																									
+function stopScan() {																									
+if (html5QrCode && html5QrCode.isScanning) {																									
+html5QrCode.stop().then(() => {																									
+document.getElementById('reader').style.display = 'none';																									
+document.getElementById('stopScanBtn').style.display = 'none';																									
+document.getElementById('startScanBtn').style.display = 'block';																									
+});																									
+} else {																									
+document.getElementById('reader').style.display = 'none';																									
+document.getElementById('stopScanBtn').style.display = 'none';																									
+document.getElementById('startScanBtn').style.display = 'block';																									
+}																									
+}																									
 																									
-const qtyStr = prompt(`商品 [${barcode}] の入荷個数:`, "1");																									
+// 4. バーコード読み取り成功時の分岐																									
+function onScanSuccess(decodedText) {																									
+// 連続読み取り防止のため一度カメラ停止																									
+stopScan();																									
+																									
+if (currentMode === "outbound") {																									
+// 出荷モード: 店舗別ピッキング検索																									
+const isReverse = document.getElementById('sortOrder').value;																									
+sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(decodedText)}&reverse=${isReverse}`, function(res) {																									
+if (res.success) {																									
+let msg = `【出荷指示】\n品番: ${res.modelNumber}\nJAN: ${res.barcode}\n合計数: ${res.totalQty}\n\n`;																									
+res.stores.forEach(s => {																									
+msg += `・店舗${s.storeNo} (${s.storeName}): ${s.qty}個\n`;																									
+});																									
+																									
+if (confirm(msg + "\nピッキングを完了として記録しますか？")) {																									
+sendJsonp(`${GAS_URL}?action=complete&rowIndex=${res.rowIndex}&barcode=${encodeURIComponent(res.barcode)}&qty=${res.totalQty}`, function(cRes) {																									
+if (cRes.success) alert("完了を記録しました。");																									
+});																									
+}																									
+} else {																									
+alert("エラー: " + res.error);																									
+}																									
+});																									
+																									
+} else {																									
+// 入荷モード: 数量入力ダイアログ																									
+const qtyStr = prompt(`【入荷】\nJAN: ${decodedText}\n入荷する個数を入力してください:`, "1");																									
+if (!qtyStr) return;																									
+																									
 const qty = Number(qtyStr);																									
 if (isNaN(qty) || qty <= 0) {																									
-alert("正しい数量を入力してください。");																									
+alert("正しい個数を入力してください。");																									
 return;																									
 }																									
 																									
-sendJsonp(`${GAS_URL}?action=inbound&barcode=${encodeURIComponent(barcode)}&qty=${qty}`, function(res) {																									
+sendJsonp(`${GAS_URL}?action=inbound&barcode=${encodeURIComponent(decodedText)}&qty=${qty}`, function(res) {																									
 if (res.success) {																									
-alert(`【入荷完了】\n商品: ${barcode}\n個数: ${qty}\n最新在庫: ${res.newStock}`);																									
-loadProductList();																									
+alert(`【入荷完了】\nJAN: ${decodedText}\n数量: ${qty}\n最新在庫数: ${res.newStock}`);																									
 } else {																									
 alert("エラー: " + res.error);																									
 }																									
 });																									
 }																									
-																									
-function toggleMode() {																									
-const modeEl = document.getElementById('modeDisplay');																									
-if (currentMode === "outbound") {																									
-currentMode = "inbound";																									
-modeEl.className = "mode-badge mode-inbound";																									
-modeEl.innerText = "MODE: 入荷処理";																									
-} else {																									
-currentMode = "outbound";																									
-modeEl.className = "mode-badge mode-outbound";																									
-modeEl.innerText = "MODE: 出荷ピッキング";																									
-}																									
 }																									
 																									
-function startScan() {																									
-if (currentMode === "inbound") {																									
-promptInboundScan();																									
-} else {																									
-alert("スキャンを開始します");																									
-}																									
-}																									
-																									
-// JSONP通信用ヘルパー関数																									
+// JSONP通信ヘルパー																									
 function sendJsonp(url, callback) {																									
 const callbackName = 'cb_' + Math.random().toString(36).substring(2, 9);																									
 const script = document.createElement('script');																									
