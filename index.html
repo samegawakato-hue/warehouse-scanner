@@ -141,7 +141,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
 let currentMode = 'OUT_ITEM';																									
@@ -253,7 +253,7 @@ stopScan();
 																									
 const nextStore = getNextRequiredStore();																									
 if (!nextStore) {																									
-showStatus('🎉 この商品は全店舗完了済みです（グレー表示済み）', 'success');																									
+showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
 switchMode('OUT_ITEM');																									
 } else {																									
 showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
@@ -324,7 +324,6 @@ updateStoreUI();
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
-// 店舗ピッキング完了時：出荷データ入力シートのセルをグレーアウト反映																									
 sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);																									
 																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
