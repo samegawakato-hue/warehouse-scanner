@@ -116,7 +116,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- 本日の全体進捗表示カード -->																									
 <div class="progress-card">																									
 <div style="display:flex; justify-content:space-between; align-items:center;">																									
 <span style="font-size:12px; color:#cbd5e1; font-weight:bold;">📊 本日の出荷全体進捗</span>																									
@@ -305,7 +304,7 @@ const callbackName = 'cb_' + Date.now();
 const timer = setTimeout(() => {																									
 cleanup();																									
 triggerError('通信タイムアウト：GASからの応答がありません');																									
-}, 10000);																									
+}, 15000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
@@ -395,10 +394,11 @@ const targetStore = currentData.stores.find(s => String(s.storeCode) === String(
 showStatus('スキャン記録中...', 'success');																									
 const callbackName = 'cb_rec_' + Date.now();																									
 																									
+// 15秒のタイムアウト処理																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASからの応答がありません');																									
-}, 10000);																									
+triggerError('通信タイムアウト：GAS側で処理エラーが発生した可能性があります');																									
+}, 15000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
@@ -435,7 +435,7 @@ showStatus(`🎉 ${targetStore.storeName} への投入完了！次は【${nextSt
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
 } else {																									
-triggerError(res ? res.error : '加算失敗：データが見つかりません');																									
+triggerError(res ? res.error : '加算失敗：GASからの応答が不適切です');																									
 }																									
 };																									
 																									
