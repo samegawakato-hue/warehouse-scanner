@@ -310,7 +310,6 @@ showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン�
 }																									
 																									
 function countNeedItemScan(barcode) {																									
-// 違う商品をスキャンした場合はブザー発動																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
 triggerError(`❌ 違う商品です！ (スキャンされたコード: ${barcode})`);																									
@@ -324,7 +323,6 @@ const count = storeCounts[activeStoreCode];
 updateStoreUI();																									
 stopScan();																									
 																									
-// 1店舗の規定数に達したタイミングでスプレッドシートへ送信																									
 if (count >= targetStore.qty) {																									
 sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);																									
 																									
@@ -345,7 +343,6 @@ showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を
 }																									
 }																									
 																									
-// 1店舗完了時にGAS（出荷データ入力シート）へデータを反映																									
 function sendStoreCompletionToGAS(barcode, storeCode, qty) {																									
 showStatus('店舗完了データをスプレッドシートへ送信中...', 'success');																									
 const callbackName = 'cb_store_' + Date.now();																									
@@ -362,15 +359,24 @@ script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode
 document.body.appendChild(script);																									
 }																									
 																									
-// 「進捗シートに反映」ボタンが押された時の処理																									
 function syncToProgressSheet() {																									
 showStatus('進捗シートを更新中...', 'success');																									
 const callbackName = 'cb_sync_' + Date.now();																									
 																									
-window[callbackName] = function(res) {																									
-delete window[callbackName];																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+triggerError('更新タイムアウト：GASの応答がありません');																									
+}, 10000);																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
 const oldScript = document.getElementById(callbackName);																									
 if (oldScript) oldScript.remove();																									
+}																									
+																									
+window[callbackName] = function(res) {																									
+cleanup();																									
 if (res && res.success) {																									
 showStatus('✅ 進捗シートへの反映が完了しました！', 'success');																									
 } else {																									
@@ -381,6 +387,10 @@ triggerError('進捗シートへの反映に失敗しました');
 const script = document.createElement('script');																									
 script.id = callbackName;																									
 script.src = `${GAS_URL}?action=updateProgressSheet&callback=${callbackName}&_t=${Date.now()}`;																									
+script.onerror = function() {																									
+cleanup();																									
+triggerError('通信エラー：進捗シートの更新に失敗しました');																									
+};																									
 document.body.appendChild(script);																									
 }																									
 																									
@@ -398,7 +408,6 @@ document.getElementById('inItemInfo').innerText = '商品をスキャンして�
 showStatus('入荷登録が完了しました', 'success');																									
 }																									
 																									
-// エラー（誤スキャン）時の警告音＆バイブレーション																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
 try {																									
@@ -479,7 +488,6 @@ card.className = 'store-card';
 }																									
 });																									
 																									
-// 進捗バーの更新																									
 document.getElementById('pickedQty').innerText = totalPicked;																									
 const percentage = currentData.totalQty > 0 ? (totalPicked / currentData.totalQty) * 100 : 0;																									
 document.getElementById('progressFill').style.width = `${percentage}%`;																									
