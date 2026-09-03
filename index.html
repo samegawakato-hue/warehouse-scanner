@@ -118,7 +118,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <!-- 本日の全体進捗表示カード -->																									
 <div class="progress-card">																									
-<div style="display:flex; justify-content:space-between; align-items:center;">																									
+<div style="display:flex; justify-space-between; align-items:center;">																									
 <span style="font-size:12px; color:#cbd5e1; font-weight:bold;">📊 本日の出荷全体進捗</span>																									
 <span id="progressRateText" style="font-size:14px; color:#10b981; font-weight:bold;">0.0%</span>																									
 </div>																									
@@ -218,7 +218,7 @@ document.getElementById('progressBarFill').style.width = data.rate + '%';
 }																									
 };																									
 																									
-script.src = `${GAS_URL}?action=progress&callback=${callbackName}`;																									
+script.src = `${GAS_URL}?action=progress&callback=${callbackName}&_t=${Date.now()}`;																									
 document.body.appendChild(script);																									
 }																									
 																									
@@ -300,7 +300,7 @@ const script = document.createElement('script');
 																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASのデプロイ設定（全員）を確認してください');																									
+triggerError('通信タイムアウト：GASのデプロイ設定を確認してください');																									
 }, 10000);																									
 																									
 function cleanup() {																									
@@ -328,11 +328,11 @@ stopScan();
 showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(data.error || '未登録の商品です');																									
+triggerError(data.error || '「出荷データ」シートに登録のない商品です');																									
 }																									
 };																									
 																									
-script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
+script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}&_t=${Date.now()}`;																									
 script.onerror = function() {																									
 cleanup();																									
 triggerError('通信エラー：接続できませんでした');																									
@@ -434,7 +434,7 @@ triggerError(res ? res.error : '加算失敗：データが見つかりません
 }																									
 };																									
 																									
-script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}`;																									
+script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}&_t=${Date.now()}`;																									
 script.onerror = function() {																									
 cleanup();																									
 triggerError('通信エラー：接続を確認してください');																									
