@@ -11,7 +11,7 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 230px; /* 下部固定エリアの高さ分の余白 */																									
+padding-bottom: 230px;																									
 }																									
 .card {																									
 background: #fff;																									
@@ -20,7 +20,6 @@ padding: 14px;
 margin-bottom: 10px;																									
 box-shadow: 0 2px 6px rgba(0,0,0,0.05);																									
 }																									
-/* 進捗カード用スタイル */																									
 .progress-card {																									
 background: #1e293b;																									
 color: #fff;																									
@@ -36,17 +35,9 @@ align-items: center;
 margin-top: 8px;																									
 text-align: center;																									
 }																									
-.progress-metric-item {																									
-flex: 1;																									
-}																									
-.progress-metric-value {																									
-font-size: 20px;																									
-font-weight: bold;																									
-}																									
-.progress-metric-label {																									
-font-size: 11px;																									
-color: #94a3b8;																									
-}																									
+.progress-metric-item { flex: 1; }																									
+.progress-metric-value { font-size: 20px; font-weight: bold; }																									
+.progress-metric-label { font-size: 11px; color: #94a3b8; }																									
 .progress-bar-container {																									
 width: 100%;																									
 background-color: #334155;																									
@@ -150,16 +141,13 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- 上部：入荷ボタン（横長） -->																									
 <div class="top-btn-container">																									
 <button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
-<!-- メイン表示エリア -->																									
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
 																									
-<!-- カメラ表示エリア -->																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
 <button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
@@ -188,9 +176,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- 画面最下部固定：ボタンエリア -->																									
 <div class="bottom-btn-container">																									
-<!-- 順序選択ドロップダウン -->																									
 <select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
@@ -213,11 +199,8 @@ let isProcessing = false;
 let audioCtx = null;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
-																									
-// アプリ起動時に進捗状況を読み込み																									
 window.addEventListener('DOMContentLoaded', fetchOverallProgress);																									
 																									
-// 本日の進捗状況をGASから取得																									
 function fetchOverallProgress() {																									
 const callbackName = 'cb_progress_' + Date.now();																									
 const script = document.createElement('script');																									
@@ -274,17 +257,10 @@ showStatus(`並び順を変更しました。次は【${nextStore.storeName}】(
 																									
 function startScan() {																									
 isProcessing = false;																									
-																									
 try {																									
-if (!audioCtx) {																									
-audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
-}																									
-if (audioCtx.state === 'suspended') {																									
-audioCtx.resume();																									
-}																									
-} catch (e) {																									
-console.error('AudioInit Error:', e);																									
-}																									
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+if (audioCtx.state === 'suspended') audioCtx.resume();																									
+} catch (e) {}																									
 																									
 document.getElementById('videoContainer').style.display = 'block';																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
@@ -318,14 +294,13 @@ prepareInItem(code);
 																									
 function fetchProductData(barcode) {																									
 showStatus('商品データ取得中...', 'success');																									
-																									
 const isReverse = document.getElementById('sortOrder').value;																									
 const callbackName = 'cb_' + Date.now();																									
 const script = document.createElement('script');																									
 																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASの設定を確認してください');																									
+triggerError('通信タイムアウト：GASのデプロイ設定（全員）を確認してください');																									
 }, 10000);																									
 																									
 function cleanup() {																									
@@ -339,11 +314,7 @@ cleanup();
 if (data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
-																									
-// シート上の最新完了数を画面にセット																									
-data.stores.forEach(s => {																									
-storeCounts[s.storeCode] = s.completedQty || 0;																									
-});																									
+data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
 																									
 renderProductData(data);																									
 																									
@@ -382,7 +353,6 @@ return;
 }																									
 																									
 const nextRequiredStore = getNextRequiredStore();																									
-																									
 if (!nextRequiredStore) {																									
 triggerError('すべての店舗へのピッキングが完了しています');																									
 return;																									
@@ -414,23 +384,31 @@ triggerError('❌ 違う商品です！正しい商品をスキャンしてく�
 return;																									
 }																									
 																									
-stopScan(); // 1個スキャンごとにカメラ停止																									
-																									
+stopScan();																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
 																									
-// GASサーバーへ1個カウント加算リクエスト																									
 showStatus('スキャン記録中...', 'success');																									
 const callbackName = 'cb_rec_' + Date.now();																									
 const script = document.createElement('script');																									
 																									
-window[callbackName] = function(res) {																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+triggerError('通信タイムアウト：GASのデプロイを確認してください');																									
+}, 8000);																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
 if (script.parentNode) script.parentNode.removeChild(script);																									
-delete window[callbackName];																									
+}																									
+																									
+window[callbackName] = function(res) {																									
+cleanup();																									
 																									
 if (res && res.success) {																									
 storeCounts[activeStoreCode] = res.completedQty;																									
 updateStoreUI();																									
-fetchOverallProgress(); // 全体進捗カードを即時更新																									
+fetchOverallProgress();																									
 																									
 const count = storeCounts[activeStoreCode];																									
 																									
@@ -452,14 +430,14 @@ showStatus(`🎉 ${targetStore.storeName} への投入完了！次は【${nextSt
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
 } else {																									
-triggerError(res ? res.error : '加算処理に失敗しました');																									
+triggerError(res ? res.error : '加算失敗：データが見つかりません');																									
 }																									
 };																									
 																									
 script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}`;																									
 script.onerror = function() {																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
-triggerError('通信エラー：加算記録に失敗しました');																									
+cleanup();																									
+triggerError('通信エラー：接続を確認してください');																									
 };																									
 																									
 document.body.appendChild(script);																									
@@ -481,32 +459,21 @@ showStatus('入荷登録が完了しました', 'success');
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-																									
 try {																									
 const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
-if (ctx.state === 'suspended') {																									
-ctx.resume();																									
-}																									
-																									
+if (ctx.state === 'suspended') ctx.resume();																									
 const osc = ctx.createOscillator();																									
 const gain = ctx.createGain();																									
-																									
 osc.type = 'sawtooth';																									
 osc.frequency.setValueAtTime(880, ctx.currentTime);																									
 gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
-																									
 osc.connect(gain);																									
 gain.connect(ctx.destination);																									
-																									
 osc.start();																									
 osc.stop(ctx.currentTime + 0.4);																									
-} catch (e) {																									
-console.error('Audio Error:', e);																									
-}																									
+} catch (e) {}																									
 																									
-if (navigator.vibrate) {																									
-navigator.vibrate([200, 100, 200, 100, 400]);																									
-}																									
+if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);																									
 }																									
 																									
 function renderProductData(data) {																									
@@ -546,7 +513,6 @@ updateStoreUI();
 																									
 function updateStoreUI() {																									
 if (!currentData) return;																									
-																									
 const nextRequiredStore = getNextRequiredStore();																									
 																									
 currentData.stores.forEach(store => {																									
