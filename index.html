@@ -11,9 +11,56 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 230px;																									
+padding-bottom: 230px; /* 下部固定エリアの高さ分の余白 */																									
 }																									
-.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
+.card {																									
+background: #fff;																									
+border-radius: 12px;																									
+padding: 14px;																									
+margin-bottom: 10px;																									
+box-shadow: 0 2px 6px rgba(0,0,0,0.05);																									
+}																									
+/* 進捗カード用スタイル */																									
+.progress-card {																									
+background: #1e293b;																									
+color: #fff;																									
+border-radius: 12px;																									
+padding: 14px;																									
+margin-bottom: 10px;																									
+box-shadow: 0 2px 6px rgba(0,0,0,0.1);																									
+}																									
+.progress-metrics {																									
+display: flex;																									
+justify-content: space-between;																									
+align-items: center;																									
+margin-top: 8px;																									
+text-align: center;																									
+}																									
+.progress-metric-item {																									
+flex: 1;																									
+}																									
+.progress-metric-value {																									
+font-size: 20px;																									
+font-weight: bold;																									
+}																									
+.progress-metric-label {																									
+font-size: 11px;																									
+color: #94a3b8;																									
+}																									
+.progress-bar-container {																									
+width: 100%;																									
+background-color: #334155;																									
+border-radius: 6px;																									
+height: 10px;																									
+margin-top: 10px;																									
+overflow: hidden;																									
+}																									
+.progress-bar-fill {																									
+height: 100%;																									
+background-color: #10b981;																									
+width: 0%;																									
+transition: width 0.3s ease;																									
+}																									
 .top-btn-container { margin-bottom: 10px; }																									
 .bottom-btn-container {																									
 position: fixed;																									
@@ -69,6 +116,7 @@ color: #334155;
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
 .big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
 .store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
+.store-card.active { border-color: #2563eb; background: #eff6ff; }																									
 .store-card.done { border-color: #10b981; background: #f0fdf4; opacity: 0.6; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 video { width: 100%; border-radius: 8px; }																									
@@ -77,13 +125,41 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
+<!-- 本日の全体進捗表示カード -->																									
+<div class="progress-card">																									
+<div style="display:flex; justify-content:space-between; align-items:center;">																									
+<span style="font-size:12px; color:#cbd5e1; font-weight:bold;">📊 本日の出荷全体進捗</span>																									
+<span id="progressRateText" style="font-size:14px; color:#10b981; font-weight:bold;">0.0%</span>																									
+</div>																									
+<div class="progress-bar-container">																									
+<div id="progressBarFill" class="progress-bar-fill"></div>																									
+</div>																									
+<div class="progress-metrics">																									
+<div class="progress-metric-item">																									
+<div id="pTotal" class="progress-metric-value">0</div>																									
+<div class="progress-metric-label">指示総数</div>																									
+</div>																									
+<div class="progress-metric-item">																									
+<div id="pCompleted" class="progress-metric-value" style="color:#10b981;">0</div>																									
+<div class="progress-metric-label">完了数</div>																									
+</div>																									
+<div class="progress-metric-item">																									
+<div id="pRemaining" class="progress-metric-value" style="color:#f59e0b;">0</div>																									
+<div class="progress-metric-label">残り数</div>																									
+</div>																									
+</div>																									
+</div>																									
+																									
+<!-- 上部：入荷ボタン（横長） -->																									
 <div class="top-btn-container">																									
 <button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品</button>																									
 </div>																									
 																									
+<!-- メイン表示エリア -->																									
 <div class="card">																									
 <div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
 																									
+<!-- カメラ表示エリア -->																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
 <video id="video"></video>																									
 <button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
@@ -95,7 +171,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
 <h3 id="itemTitle" style="margin:0;">商品ピッキング</h3>																									
-<div id="itemSub" style="color:#64748b; font-size:13px; font-weight:bold; margin-top:2px;"></div>																									
+<div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
 <div style="margin-top:6px;">本日出荷合計: <span id="totalQty" class="big-num">0</span> 個</div>																									
 </div>																									
 <hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
@@ -112,7 +188,9 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
+<!-- 画面最下部固定：ボタンエリア -->																									
 <div class="bottom-btn-container">																									
+<!-- 順序選択ドロップダウン -->																									
 <select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
@@ -123,8 +201,8 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★ご自身のWebアプリURL																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
+// ★ご自身のWebアプリURLを設定してください																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
 let currentMode = 'OUT_ITEM';																									
@@ -135,6 +213,31 @@ let isProcessing = false;
 let audioCtx = null;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
+																									
+// アプリ起動時に進捗状況を読み込み																									
+window.addEventListener('DOMContentLoaded', fetchOverallProgress);																									
+																									
+// 本日の進捗状況をGASから取得																									
+function fetchOverallProgress() {																									
+const callbackName = 'cb_progress_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+window[callbackName] = function(data) {																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+delete window[callbackName];																									
+																									
+if (data && data.success) {																									
+document.getElementById('pTotal').innerText = data.total;																									
+document.getElementById('pCompleted').innerText = data.completed;																									
+document.getElementById('pRemaining').innerText = data.remaining;																									
+document.getElementById('progressRateText').innerText = data.rate + '%';																									
+document.getElementById('progressBarFill').style.width = data.rate + '%';																									
+}																									
+};																									
+																									
+script.src = `${GAS_URL}?action=progress&callback=${callbackName}`;																									
+document.body.appendChild(script);																									
+}																									
 																									
 function switchMode(mode) {																									
 currentMode = mode;																									
@@ -217,39 +320,54 @@ function fetchProductData(barcode) {
 showStatus('商品データ取得中...', 'success');																									
 																									
 const isReverse = document.getElementById('sortOrder').value;																									
-sendJsonp(`${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`, data => {																									
-if (data && data.success) {																									
+const callbackName = 'cb_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+triggerError('通信タイムアウト：GASの設定を確認してください');																									
+}, 10000);																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+}																									
+																									
+window[callbackName] = function(data) {																									
+cleanup();																									
+if (data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
 																									
-// ★スプレッドシート上でグレー(isCompleted: true)になっている店舗はカウントを最初から満了(s.qty)にする																									
+// シート上の最新完了数を画面にセット																									
 data.stores.forEach(s => {																									
-if (s.isCompleted) {																									
-storeCounts[s.storeCode] = s.qty;																									
-} else {																									
-storeCounts[s.storeCode] = 0;																									
-}																									
+storeCounts[s.storeCode] = s.completedQty || 0;																									
 });																									
 																									
 renderProductData(data);																									
 																									
 const nextStore = getNextRequiredStore();																									
-																									
-// すべての店舗が既にグレー（完了）の場合																									
 if (!nextStore) {																									
-showStatus(`【${data.itemCode}】の全店舗の指示は完了済みです。次の商品をスキャンしてください。`, 'success');																									
+showStatus('🎉 この商品はすでに全店舗で完了しています！', 'success');																									
 switchMode('OUT_ITEM');																									
-return;																									
-}																									
-																									
+} else {																									
 switchMode('OUT_STORE');																									
 stopScan();																									
-																									
-showStatus(`1. 商品確認完了。【${data.itemCode}】\n次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
-} else {																									
-triggerError((data && data.error) ? data.error : '対象の出荷データが見つかりません');																									
+showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 }																									
-});																									
+} else {																									
+triggerError(data.error || '未登録の商品です');																									
+}																									
+};																									
+																									
+script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
+script.onerror = function() {																									
+cleanup();																									
+triggerError('通信エラー：接続できませんでした');																									
+};																									
+																									
+document.body.appendChild(script);																									
 }																									
 																									
 function getNextRequiredStore() {																									
@@ -296,20 +414,28 @@ triggerError('❌ 違う商品です！正しい商品をスキャンしてく�
 return;																									
 }																									
 																									
+stopScan(); // 1個スキャンごとにカメラ停止																									
+																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
-storeCounts[activeStoreCode]++;																									
+																									
+// GASサーバーへ1個カウント加算リクエスト																									
+showStatus('スキャン記録中...', 'success');																									
+const callbackName = 'cb_rec_' + Date.now();																									
+const script = document.createElement('script');																									
+																									
+window[callbackName] = function(res) {																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+delete window[callbackName];																									
+																									
+if (res && res.success) {																									
+storeCounts[activeStoreCode] = res.completedQty;																									
+updateStoreUI();																									
+fetchOverallProgress(); // 全体進捗カードを即時更新																									
 																									
 const count = storeCounts[activeStoreCode];																									
-updateStoreUI();																									
-																									
-stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
-sendJsonp(`${GAS_URL}?action=complete&barcode=${encodeURIComponent(currentData.barcode)}&storeCode=${encodeURIComponent(targetStore.storeCode)}`, res => {																									
-console.log('背景色変更完了:', res);																									
-});																									
-																									
-const isAllCompleted = currentData.stores.every(s => storeCounts[s.storeCode] >= s.qty);																									
+const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
 																									
 if (isAllCompleted) {																									
 alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
@@ -325,6 +451,18 @@ showStatus(`🎉 ${targetStore.storeName} への投入完了！次は【${nextSt
 } else {																									
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
 }																									
+} else {																									
+triggerError(res ? res.error : '加算処理に失敗しました');																									
+}																									
+};																									
+																									
+script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}`;																									
+script.onerror = function() {																									
+if (script.parentNode) script.parentNode.removeChild(script);																									
+triggerError('通信エラー：加算記録に失敗しました');																									
+};																									
+																									
+document.body.appendChild(script);																									
 }																									
 																									
 function prepareInItem(barcode) {																									
@@ -339,13 +477,6 @@ alert(`入荷登録完了: ${qty} 個`);
 document.getElementById('inInputForm').style.display = 'none';																									
 document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
 showStatus('入荷登録が完了しました', 'success');																									
-}																									
-																									
-function showStatus(msg, type) {																									
-const el = document.getElementById('status');																									
-el.style.display = 'block';																									
-el.innerText = msg;																									
-el.className = `status ${type}`;																									
 }																									
 																									
 function triggerError(msg) {																									
@@ -380,8 +511,7 @@ navigator.vibrate([200, 100, 200, 100, 400]);
 																									
 function renderProductData(data) {																									
 document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemTitle').innerText = data.itemCode ? `型番: ${data.itemCode}` : '商品ピッキング';																									
-document.getElementById('itemSub').innerText = `JAN: ${data.barcode}`;																									
+document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
 document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
 const listEl = document.getElementById('storeList');																									
@@ -436,32 +566,11 @@ card.className = 'store-card';
 });																									
 }																									
 																									
-function sendJsonp(url, callback) {																									
-const cb = 'cb_' + Math.random().toString(36).substring(2, 9);																									
-const script = document.createElement('script');																									
-																									
-const timer = setTimeout(() => {																									
-delete window[cb];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
-triggerError('通信タイムアウト: GASからの応答がありません');																									
-}, 10000);																									
-																									
-window[cb] = data => {																									
-clearTimeout(timer);																									
-delete window[cb];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
-callback(data);																									
-};																									
-																									
-script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;																									
-script.onerror = () => {																									
-clearTimeout(timer);																									
-delete window[cb];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
-triggerError('通信エラー: ネットワーク接続を確認してください');																									
-};																									
-																									
-document.body.appendChild(script);																									
+function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
 }																									
 </script>																									
 </body>																									
