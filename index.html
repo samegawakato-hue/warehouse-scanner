@@ -118,7 +118,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <!-- 本日の全体進捗表示カード -->																									
 <div class="progress-card">																									
-<div style="display:flex; justify-space-between; align-items:center;">																									
+<div style="display:flex; justify-content:space-between; align-items:center;">																									
 <span style="font-size:12px; color:#cbd5e1; font-weight:bold;">📊 本日の出荷全体進捗</span>																									
 <span id="progressRateText" style="font-size:14px; color:#10b981; font-weight:bold;">0.0%</span>																									
 </div>																									
@@ -187,7 +187,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★ご自身のWebアプリURLを設定してください																									
+// ★WebアプリURLを設定してください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -328,7 +328,8 @@ stopScan();
 showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(data.error || '「出荷データ」シートに登録のない商品です');																									
+// エラーメッセージを「出荷データ入力」シートに統一																									
+triggerError(data.error || '「出荷データ入力」シートに登録のない商品です');																									
 }																									
 };																									
 																									
