@@ -380,7 +380,7 @@ cleanup();
 if (res && res.success) {																									
 showStatus('✅ 進捗シートへの反映が完了しました！', 'success');																									
 } else {																									
-triggerError('進捗シートへの反映に失敗しました');																									
+triggerError(res.error || '進捗シートへの反映に失敗しました');																									
 }																									
 };																									
 																									
