@@ -187,7 +187,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 																									
 <script>																									
-// ★WebアプリURLを設定してください																									
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzeR8CNs7gLSGvZi_C5QaKOarztj_wUrpcm6MX1aPI5dNVJoIRT7L-pb2CQpxqeYQxqtQ/exec";																									
 																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -203,11 +202,11 @@ window.addEventListener('DOMContentLoaded', fetchOverallProgress);
 																									
 function fetchOverallProgress() {																									
 const callbackName = 'cb_progress_' + Date.now();																									
-const script = document.createElement('script');																									
 																									
 window[callbackName] = function(data) {																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
 delete window[callbackName];																									
+const oldScript = document.getElementById(callbackName);																									
+if (oldScript) oldScript.remove();																									
 																									
 if (data && data.success) {																									
 document.getElementById('pTotal').innerText = data.total;																									
@@ -218,12 +217,15 @@ document.getElementById('progressBarFill').style.width = data.rate + '%';
 }																									
 };																									
 																									
+const script = document.createElement('script');																									
+script.id = callbackName;																									
 script.src = `${GAS_URL}?action=progress&callback=${callbackName}&_t=${Date.now()}`;																									
 document.body.appendChild(script);																									
 }																									
 																									
 function switchMode(mode) {																									
 currentMode = mode;																									
+isProcessing = false;																									
 document.querySelectorAll('.mode-btn-full').forEach(b => b.classList.remove('active'));																									
 document.getElementById('status').style.display = 'none';																									
 																									
@@ -235,6 +237,9 @@ document.getElementById('inArea').style.display = 'none';
 } else if (mode === 'OUT_STORE') {																									
 document.getElementById('btnOutStore').classList.add('active');																									
 titleEl.innerText = 'MODE: 出荷店舗スキャン（箱の店番）';																									
+document.getElementById('inArea').style.display = 'none';																									
+} else if (mode === 'OUT_NEED') {																									
+document.getElementById('btnOutItem').classList.add('active');																									
 document.getElementById('inArea').style.display = 'none';																									
 } else if (mode === 'IN_ITEM') {																									
 document.getElementById('btnInItem').classList.add('active');																									
@@ -296,17 +301,17 @@ function fetchProductData(barcode) {
 showStatus('商品データ取得中...', 'success');																									
 const isReverse = document.getElementById('sortOrder').value;																									
 const callbackName = 'cb_' + Date.now();																									
-const script = document.createElement('script');																									
 																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASのデプロイ設定を確認してください');																									
+triggerError('通信タイムアウト：GASからの応答がありません');																									
 }, 10000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
 if (window[callbackName]) delete window[callbackName];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
+const oldScript = document.getElementById(callbackName);																									
+if (oldScript) oldScript.remove();																									
 }																									
 																									
 window[callbackName] = function(data) {																									
@@ -328,17 +333,13 @@ stopScan();
 showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) のバーコードをスキャンしてください`, 'success');																									
 }																									
 } else {																									
-// エラーメッセージを「出荷データ入力」シートに統一																									
 triggerError(data.error || '「出荷データ入力」シートに登録のない商品です');																									
 }																									
 };																									
 																									
+const script = document.createElement('script');																									
+script.id = callbackName;																									
 script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}&_t=${Date.now()}`;																									
-script.onerror = function() {																									
-cleanup();																									
-triggerError('通信エラー：接続できませんでした');																									
-};																									
-																									
 document.body.appendChild(script);																									
 }																									
 																									
@@ -373,15 +374,18 @@ return;
 																									
 const currentCount = storeCounts[nextRequiredStore.storeCode] || 0;																									
 activeStoreCode = nextRequiredStore.storeCode;																									
-currentMode = 'OUT_NEED';																									
+switchMode('OUT_NEED');																									
 document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${nextRequiredStore.storeName})`;																									
 showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をあと ${nextRequiredStore.qty - currentCount} 回スキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
-if (barcode !== currentData.barcode) {																									
+const targetBarcode = String(barcode).trim();																									
+const expectedBarcode = String(currentData.barcode).trim();																									
+																									
+if (targetBarcode !== expectedBarcode) {																									
 stopScan();																									
-triggerError('❌ 違う商品です！正しい商品をスキャンしてください');																									
+triggerError(`❌ 違う商品です！(スキャン: ${targetBarcode})`);																									
 return;																									
 }																									
 																									
@@ -390,17 +394,17 @@ const targetStore = currentData.stores.find(s => String(s.storeCode) === String(
 																									
 showStatus('スキャン記録中...', 'success');																									
 const callbackName = 'cb_rec_' + Date.now();																									
-const script = document.createElement('script');																									
 																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASのデプロイを確認してください');																									
-}, 8000);																									
+triggerError('通信タイムアウト：GASからの応答がありません');																									
+}, 10000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
 if (window[callbackName]) delete window[callbackName];																									
-if (script.parentNode) script.parentNode.removeChild(script);																									
+const oldScript = document.getElementById(callbackName);																									
+if (oldScript) oldScript.remove();																									
 }																									
 																									
 window[callbackName] = function(res) {																									
@@ -435,12 +439,9 @@ triggerError(res ? res.error : '加算失敗：データが見つかりません
 }																									
 };																									
 																									
-script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}&_t=${Date.now()}`;																									
-script.onerror = function() {																									
-cleanup();																									
-triggerError('通信エラー：接続を確認してください');																									
-};																									
-																									
+const script = document.createElement('script');																									
+script.id = callbackName;																									
+script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(targetBarcode)}&storeCode=${encodeURIComponent(activeStoreCode)}&callback=${callbackName}&_t=${Date.now()}`;																									
 document.body.appendChild(script);																									
 }																									
 																									
