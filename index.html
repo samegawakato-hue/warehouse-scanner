@@ -324,6 +324,7 @@ updateStoreUI();
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
+// 💡 店舗完了時に自動的に進捗シートへ送信・自動反映																									
 sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);																									
 																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
@@ -332,11 +333,11 @@ alert(`🎉 この商品の全店舗へのピッキングが完了しました�
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
 switchMode('OUT_ITEM');																									
-showStatus('全店舗の出荷完了！次の出荷商品をスキャンしてください', 'success');																									
+showStatus('全店舗の出荷完了！（進捗シートへ自動反映済み）', 'success');																									
 } else {																									
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`🎉 ${targetStore.storeName} 完了（シートへ反映完了）！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+showStatus(`🎉 ${targetStore.storeName} 完了（シートへ自動反映完了）！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
 }																									
 } else {																									
 showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
@@ -344,7 +345,6 @@ showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を
 }																									
 																									
 function sendStoreCompletionToGAS(barcode, storeCode, qty) {																									
-showStatus('店舗完了データをスプレッドシートへ送信中...', 'success');																									
 const callbackName = 'cb_store_' + Date.now();																									
 																									
 window[callbackName] = function(res) {																									
