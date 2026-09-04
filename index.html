@@ -216,7 +216,7 @@ isProcessing = false;
 }																									
 																									
 function handleScan(code) {																									
-playSuccessBeep(); // 読み込み成功時の「ピピッ」音																									
+// ここでの一律の成功音を廃止し、各処理の成功時のみ鳴らすように変更しました																									
 																									
 if (currentMode === 'OUT_ITEM') {																									
 stopScan();																									
@@ -249,6 +249,7 @@ if (oldScript) oldScript.remove();
 window[callbackName] = function(data) {																									
 cleanup();																									
 if (data.success) {																									
+playSuccessBeep(); // 正常に商品が読み込めた時だけ鳴らす																									
 currentData = data;																									
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
@@ -309,6 +310,7 @@ triggerError(`❌ 順序エラー！次は【店舗${nextRequiredStore.storeNo}:
 return;																									
 }																									
 																									
+playSuccessBeep(); // 店舗の箱の読み込みが成功した時																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
 showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
@@ -321,6 +323,7 @@ triggerError(`❌ 違う商品です！`);
 return;																									
 }																									
 																									
+playSuccessBeep(); // 正しい商品（数える商品）の読み込みが成功した時																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
 storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
@@ -381,11 +384,10 @@ try {
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
 if (audioCtx.state === 'suspended') audioCtx.resume();																									
 																									
-// 1回目の「ピッ」																									
 const osc1 = audioCtx.createOscillator();																									
 const gain1 = audioCtx.createGain();																									
-osc1.type = 'sine'; // 柔らかい綺麗な電子音																									
-osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // 高めの音 (A5)																									
+osc1.type = 'sine';																									
+osc1.frequency.setValueAtTime(880, audioCtx.currentTime);																									
 gain1.gain.setValueAtTime(0.2, audioCtx.currentTime);																									
 gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);																									
 osc1.connect(gain1);																									
@@ -393,11 +395,10 @@ gain1.connect(audioCtx.destination);
 osc1.start(audioCtx.currentTime);																									
 osc1.stop(audioCtx.currentTime + 0.1);																									
 																									
-// 2回目の「ピッ」（0.12秒後）																									
 const osc2 = audioCtx.createOscillator();																									
 const gain2 = audioCtx.createGain();																									
 osc2.type = 'sine';																									
-osc2.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.12); // さらに高めの音 (D6)																									
+osc2.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.12);																									
 gain2.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.12);																									
 gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);																									
 osc2.connect(gain2);																									
@@ -413,7 +414,6 @@ try {
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
 if (audioCtx.state === 'suspended') audioCtx.resume();																									
 																									
-// 1回目の「ブー」																									
 const osc1 = audioCtx.createOscillator();																									
 const gain1 = audioCtx.createGain();																									
 osc1.type = 'sawtooth';																									
@@ -425,7 +425,6 @@ gain1.connect(audioCtx.destination);
 osc1.start(audioCtx.currentTime);																									
 osc1.stop(audioCtx.currentTime + 0.2);																									
 																									
-// 2回目の「ブー」（0.25秒後）																									
 const osc2 = audioCtx.createOscillator();																									
 const gain2 = audioCtx.createGain();																									
 osc2.type = 'sawtooth';																									
@@ -506,4 +505,4 @@ el.style.display = 'block';
 }																									
 </script>																									
 </body>																									
-</html>																									
+</html>																																																		
