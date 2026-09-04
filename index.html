@@ -83,7 +83,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- アプリを開いた時の最初の画面：商品の進捗一覧（白＝未完了 / グレー＝完了） -->																									
+<!-- アプリを開いた時の最初の画面：商品の進捗一覧 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#2563eb;">📋 ピッキング進捗一覧</div>																									
 <div id="progressListContainer">																									
@@ -373,7 +373,7 @@ showStatus('データ同期が完了しました', 'success');
 }, 500);																									
 }																									
 																									
-// 警告用ブザー音を鳴らす関数																									
+// 🔊 ブザー音を変更したい場合はここを調整できます																									
 function playBuzzer() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -381,11 +381,11 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 																									
 const osc = audioCtx.createOscillator();																									
 const gain = audioCtx.createGain();																									
-osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(280, audioCtx.currentTime);																									
+osc.type = 'sawtooth'; // 音の種類 ('sawtooth', 'square', 'sine', 'triangle')																									
+osc.frequency.setValueAtTime(280, audioCtx.currentTime); // 音の高さ (Hz)																									
 																									
 gain.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
-gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);																									
+gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35); // 鳴る長さ（秒）																									
 																									
 osc.connect(gain);																									
 gain.connect(audioCtx.destination);																									
