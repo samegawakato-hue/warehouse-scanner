@@ -1,88 +1,104 @@
-<!DOCTYPE html>																									
-<html lang="ja">																									
-<head>																									
-<meta charset="UTF-8">																									
-<meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>ピッキング管理アプリ</title>																									
-<style>																									
-body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }																									
-h1 { font-size: 24px; color: #333; }																									
-#progress { font-size: 26px; font-weight: bold; margin: 25px 0; color: #0066cc; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }																									
-input[type="text"] { font-size: 20px; padding: 12px; width: 80%; max-width: 300px; margin-bottom: 15px; box-sizing: border-box; }																									
-button { font-size: 22px; padding: 15px 30px; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; width: 80%; max-width: 300px; }																									
-button:active { background-color: #218838; }																									
-#status { font-size: 18px; margin-top: 20px; font-weight: bold; color: #555; }																									
-</style>																									
-</head>																									
-<body>																									
-																									
-<h1>ピッキング検品アプリ</h1>																									
-																									
-<!-- 進捗表示エリア -->																									
-<div id="progress">進捗: 0 / 0 完了</div>																									
-																									
-<div>																									
-<input type="text" id="barcodeInput" placeholder="バーコードをスキャン" autofocus>																									
-</div>																									
-<div>																									
-<button onclick="submitBarcode()">送信する</button>																									
-</div>																									
-																									
-<div id="status">準備完了</div>																									
-																									
-<script>																									
-// デプロイしたGASのウェブアプリURLをここに貼り付けてください																									
-const GAS_URL = "ここにGASのウェブアプリURLを貼り付け";																									
-																									
-async function submitBarcode() {																									
-const inputField = document.getElementById('barcodeInput');																									
-const barcodeData = inputField.value.trim();																									
-																									
-if (!barcodeData) {																									
-alert("バーコードを入力・スキャンしてください");																									
-return;																									
-}																									
-																									
-document.getElementById('status').innerText = "送信中...";																									
-document.getElementById('status').style.color = "#0066cc";																									
+function doGet(e) {																									
+var action = e.parameter.action;																									
+var callback = e.parameter.callback;																									
+var result = {};																									
 																									
 try {																									
-const response = await fetch(GAS_URL, {																									
-method: "POST",																									
-body: JSON.stringify({ barcode: barcodeData })																									
+var ss = SpreadsheetApp.getActiveSpreadsheet();																									
+var sheet = ss.getSheetByName("出荷データ入力");																									
+																									
+if (!sheet) {																									
+throw new Error("「出荷データ入力」シートが見つかりません");																									
+}																									
+																									
+var rows = sheet.getDataRange().getValues();																									
+																									
+if (action === "product") {																									
+var barcode = e.parameter.barcode;																									
+var isReverse = e.parameter.reverse === "true";																									
+																									
+var stores = [];																									
+var totalQty = 0;																									
+																									
+// 2行目（インデックス1）からデータ走査																									
+for (var i = 1; i < rows.length; i++) {																									
+// B列（インデックス1）がバーコード																									
+if (String(rows[i][1]).trim() === String(barcode).trim()) {																									
+var storeNo = rows[i][0];   // A列: 箱No.																									
+var storeCode = rows[i][2]; // C列: 店舗コード																									
+var qty = Number(rows[i][3]) || 1; // D列: 必要数																									
+var status = rows[i][4];    // E列: 状態																									
+var storeName = rows[i][5] || ("店舗" + storeNo); // F列: 店舗名																									
+																									
+var completedQty = (status === "完了") ? qty : 0;																									
+																									
+stores.push({																									
+storeCode: storeCode,																									
+storeNo: storeNo,																									
+storeName: storeName,																									
+qty: qty,																									
+completedQty: completedQty																									
 });																									
-const result = await response.json();																									
+totalQty += qty;																									
+}																									
+}																									
 																									
-if (result.status === "success") {																									
-document.getElementById('progress').innerText =																									
-進捗:  + result.completedCount + " / " + result.totalCount + " 完了";																									
-document.getElementById('status').innerText = "送信成功！完了しました";																									
-document.getElementById('status').style.color = "green";																									
-																									
-// 入力欄をクリアして次のスキャンに備える																									
-inputField.value = "";																									
-inputField.focus();																									
-																									
-if (navigator.vibrate) navigator.vibrate(100);																									
-} else if (result.status === "not_found") {																									
-document.getElementById('status').innerText = "該当するバーコードが見つかりません";																									
-document.getElementById('status').style.color = "orange";																									
+if (stores.length > 0) {																									
+if (isReverse) stores.reverse();																									
+result = {																									
+success: true,																									
+barcode: barcode,																									
+totalQty: totalQty,																									
+stores: stores																									
+};																									
 } else {																									
-document.getElementById('status').innerText = "エラー: " + result.message;																									
-document.getElementById('status').style.color = "red";																									
+result = { success: false, error: "該当するバーコードが見つかりません" };																									
 }																									
-} catch (error) {																									
-document.getElementById('status').innerText = "通信エラーが発生しました";																									
-document.getElementById('status').style.color = "red";																									
+																									
+} else if (action === "recordCount") {																									
+var barcode = e.parameter.barcode;																									
+var storeCode = e.parameter.storeCode;																									
+																									
+var totalCount = 0;																									
+var completedCount = 0;																									
+																									
+for (var i = 1; i < rows.length; i++) {																									
+// B列がバーコード、C列が店舗コードの行を特定																									
+if (String(rows[i][1]).trim() === String(barcode).trim()) {																									
+totalCount++;																									
+																									
+if (String(rows[i][2]).trim() === String(storeCode).trim()) {																									
+// E列（5列目）に「完了」を書き込む																									
+sheet.getRange(i + 1, 5).setValue("完了");																									
+// 該当行全体をグレーアウト																									
+sheet.getRange(i + 1, 1, 1, sheet.getLastColumn()).setBackground("#d9d9d9");																									
+rows[i][4] = "完了"; // 判定用メモリも更新																									
+}																									
+																									
+// すでに完了しているものをカウント																									
+if (rows[i][4] === "完了") {																									
+completedCount++;																									
+}																									
 }																									
 }																									
 																									
-// Enterキーでも送信できるようにする																									
-document.getElementById('barcodeInput').addEventListener('keypress', function (e) {																									
-if (e.key === 'Enter') {																									
-submitBarcode();																									
+// この商品の全店舗へのピッキングが完了していたら、A1の型番も自動でグレーアウト																									
+if (totalCount > 0 && completedCount >= totalCount) {																									
+sheet.getRange("A1").setBackground("#d9d9d9");																									
 }																									
-});																									
-</script>																									
-</body>																									
-</html>																									
+																									
+result = {																									
+success: true,																									
+completedCount: completedCount,																									
+totalCount: totalCount																									
+};																									
+}																									
+																									
+} catch (err) {																									
+result = { success: false, error: err.toString() };																									
+}																									
+																									
+// アプリ側（JSONP）へ返す処理																									
+var jsonString = callback + "(" + JSON.stringify(result) + ")";																									
+return ContentService.createTextOutput(jsonString).setMimeType(ContentService.MimeType.JAVASCRIPT);																									
+}																									
