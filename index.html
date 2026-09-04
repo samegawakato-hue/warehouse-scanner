@@ -373,31 +373,41 @@ showStatus('データ同期が完了しました', 'success');
 }, 500);																									
 }																									
 																									
-// 🔊 ブザー音を変更したい場合はここを調整できます																									
+// 🔊 ブザー音を「ブーブー」と2回鳴らす関数																									
 function playBuzzer() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
 if (audioCtx.state === 'suspended') audioCtx.resume();																									
 																									
-const osc = audioCtx.createOscillator();																									
-const gain = audioCtx.createGain();																									
-osc.type = 'sawtooth'; // 音の種類 ('sawtooth', 'square', 'sine', 'triangle')																									
-osc.frequency.setValueAtTime(280, audioCtx.currentTime); // 音の高さ (Hz)																									
+// 1回目の「ブー」																									
+const osc1 = audioCtx.createOscillator();																									
+const gain1 = audioCtx.createGain();																									
+osc1.type = 'sawtooth';																									
+osc1.frequency.setValueAtTime(280, audioCtx.currentTime);																									
+gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
+gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);																									
+osc1.connect(gain1);																									
+gain1.connect(audioCtx.destination);																									
+osc1.start(audioCtx.currentTime);																									
+osc1.stop(audioCtx.currentTime + 0.2);																									
 																									
-gain.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
-gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35); // 鳴る長さ（秒）																									
-																									
-osc.connect(gain);																									
-gain.connect(audioCtx.destination);																									
-																									
-osc.start();																									
-osc.stop(audioCtx.currentTime + 0.35);																									
+// 2回目の「ブー」（0.25秒後に開始）																									
+const osc2 = audioCtx.createOscillator();																									
+const gain2 = audioCtx.createGain();																									
+osc2.type = 'sawtooth';																									
+osc2.frequency.setValueAtTime(280, audioCtx.currentTime + 0.25);																									
+gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.25);																									
+gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);																									
+osc2.connect(gain2);																									
+gain2.connect(audioCtx.destination);																									
+osc2.start(audioCtx.currentTime + 0.25);																									
+osc2.stop(audioCtx.currentTime + 0.45);																									
 } catch (e) {}																									
 }																									
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
+if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]); // バイブも2回長めに																									
 playBuzzer();																									
 }																									
 																									
