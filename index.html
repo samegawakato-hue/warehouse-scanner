@@ -65,24 +65,29 @@ color: #334155;
 .status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; white-space: pre-wrap; }																									
 .status.success { background: #dcfce7; color: #15803d; }																									
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
-.big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
+																									
+/* 進捗リストのスタイル */																									
+.product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; }																									
+.product-item.white { background: #ffffff; color: #1e293b; }																									
+.product-item.gray { background: #e2e8f0; color: #64748b; text-decoration: line-through; opacity: 0.8; }																									
+.badge-status { padding: 4px 10px; border-radius: 6px; font-size: 12px; }																									
+.badge-status.white { background: #dbeafe; color: #1d4ed8; }																									
+.badge-status.gray { background: #cbd5e1; color: #475569; }																									
+																									
 .store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
 .store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 video { width: 100%; border-radius: 8px; }																									
 input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
-.progress-bar-bg { background: #e2e8f0; border-radius: 6px; height: 12px; width: 100%; margin-top: 6px; overflow: hidden; }																									
-.progress-bar-fill { background: #2563eb; height: 100%; width: 0%; transition: width 0.3s; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<!-- 最初に開いた時から見える進捗・状態エリア -->																									
-<div class="card" style="background: #eff6ff; border: 2px solid #2563eb;">																									
-<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:8px; color:#2563eb;">📦 最初の出荷商品をスキャンしてください</div>																									
-<div style="margin-top:4px; font-size:15px;">全体進捗: <span id="pickedQty" class="big-num">0</span> / <span id="totalQty" class="big-num">0</span> 個</div>																									
-<div class="progress-bar-bg">																									
-<div id="progressFill" class="progress-bar-fill"></div>																									
+<!-- アプリを開いた時の最初の画面：商品の進捗一覧（白＝未完了 / グレー＝完了） -->																									
+<div class="card" id="homeProgressCard">																									
+<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#2563eb;">📋 ピッキング進捗一覧（白:未完了 / 灰:完了）</div>																									
+<div id="progressListContainer">																									
+<div style="text-align:center; color:#64748b; padding:10px;">データを読み込み中...</div>																									
 </div>																									
 </div>																									
 																									
@@ -94,6 +99,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="status" class="status" style="display:none;"></div>																									
 </div>																									
 																									
+<!-- 個別商品のピッキング詳細画面 -->																									
 <div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
 <h3 id="itemTitle" style="margin:0;">商品ピッキング詳細</h3>																									
@@ -103,22 +109,12 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="storeList"></div>																									
 </div>																									
 																									
-<div id="inArea" class="card" style="display:none;">																									
-<h3>入荷登録</h3>																									
-<div id="inItemInfo" style="font-weight:bold; margin-bottom:10px;">商品をスキャンしてください</div>																									
-<div id="inInputForm" style="display:none; align-items:center; gap:10px;">																									
-<label>入荷数量:</label>																									
-<input type="number" id="inQtyInput" value="1" min="1">																									
-<button class="btn-action-full" style="width:auto; padding:10px 20px; font-size:16px;" onclick="submitInQty()">確定</button>																									
-</div>																									
-</div>																									
-																									
 <div class="bottom-btn-container">																									
 <select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
-<button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
+<button id="scanBtn" class="btn-action-full">📷 スキャン開始（商品または箱）</button>																									
 <button id="btnSyncProgress" class="btn-sync" onclick="syncData()">🔄 データ同期・更新</button>																									
 </div>																									
 																									
@@ -135,32 +131,66 @@ let audioCtx = null;
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
+// 画面起動時に自動で進捗リストを取得して表示																									
+window.onload = function() {																									
+loadProgressList();																									
+};																									
+																									
+function loadProgressList() {																									
+const callbackName = 'cb_progress_' + Date.now();																									
+window[callbackName] = function(res) {																									
+delete window[callbackName];																									
+const scriptEl = document.getElementById(callbackName);																									
+if (scriptEl) scriptEl.remove();																									
+																									
+if (res.success) {																									
+renderProgressList(res.products);																									
+} else {																									
+document.getElementById('progressListContainer').innerHTML = `<div style="color:red; text-align:center;">${res.error}</div>`;																									
+}																									
+};																									
+																									
+const script = document.createElement('script');																									
+script.id = callbackName;																									
+script.src = `${GAS_URL}?action=getProgressList&callback=${callbackName}&_t=${Date.now()}`;																									
+script.onerror = function() {																									
+document.getElementById('progressListContainer').innerHTML = `<div style="color:red; text-align:center;">通信エラー: 進捗リストを読み込めませんでした</div>`;																									
+};																									
+document.body.appendChild(script);																									
+}																									
+																									
+function renderProgressList(products) {																									
+const container = document.getElementById('progressListContainer');																									
+container.innerHTML = '';																									
+																									
+if (!products || products.length === 0) {																									
+container.innerHTML = '<div style="text-align:center; color:#64748b;">データがありません</div>';																									
+return;																									
+}																									
+																									
+products.forEach(p => {																									
+const div = document.createElement('div');																									
+const statusClass = p.isCompleted ? 'gray' : 'white';																									
+const badgeText = p.isCompleted ? '✅ 完了 (グレー)' : '⏳ 未完了 (白)';																									
+																									
+div.className = `product-item ${statusClass}`;																									
+div.innerHTML = `																									
+<div>型番/バーコード: ${p.itemCode}</div>																									
+<div class="badge-status ${statusClass}">${badgeText}</div>																									
+`;																									
+container.appendChild(div);																									
+});																									
+}																									
+																									
 function switchMode(mode) {																									
 currentMode = mode;																									
 document.getElementById('status').style.display = 'none';																									
-																									
-const titleEl = document.getElementById('modeTitle');																									
-if (mode === 'OUT_ITEM') {																									
-titleEl.innerText = '📦 最初の出荷商品をスキャンしてください';																									
-document.getElementById('inArea').style.display = 'none';																									
-} else if (mode === 'OUT_STORE') {																									
-titleEl.innerText = `🏪 次の店舗の箱をスキャンしてください`;																									
-document.getElementById('inArea').style.display = 'none';																									
-} else if (mode === 'IN_ITEM') {																									
-titleEl.innerText = '📥 入荷商品スキャン（個数手入力）';																									
-document.getElementById('inArea').style.display = 'block';																									
-document.getElementById('outArea').style.display = 'none';																									
-}																									
 }																									
 																									
 function onSortChange() {																									
 if (currentData) {																									
 currentData.stores.reverse();																									
 renderProductData(currentData);																									
-const nextStore = getNextRequiredStore();																									
-if (nextStore) {																									
-showStatus(`並び順を変更しました。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-}																									
 }																									
 }																									
 																									
@@ -195,9 +225,6 @@ stopScan();
 verifyStoreScan(code);																									
 } else if (currentMode === 'OUT_NEED') {																									
 countNeedItemScan(code);																									
-} else if (currentMode === 'IN_ITEM') {																									
-stopScan();																									
-prepareInItem(code);																									
 }																									
 }																									
 																									
@@ -208,7 +235,7 @@ const callbackName = 'cb_' + Date.now();
 																									
 const timer = setTimeout(() => {																									
 cleanup();																									
-triggerError('通信タイムアウト：GASの設定を確認してください');																									
+triggerError('通信タイムアウト');																									
 }, 10000);																									
 																									
 function cleanup() {																									
@@ -225,6 +252,8 @@ currentData = data;
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
 																									
+// トップの進捗一覧を一旦非表示にして詳細画面へ																									
+document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
 stopScan();																									
@@ -234,7 +263,7 @@ if (!nextStore) {
 showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
 switchMode('OUT_ITEM');																									
 } else {																									
-showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
+showStatus(`1. 商品確認OK。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
 triggerError(data.error || '未登録の商品です');																									
@@ -246,7 +275,7 @@ script.id = callbackName;
 script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
 script.onerror = function() {																									
 cleanup();																									
-triggerError('通信エラー：接続できませんでした');																									
+triggerError('通信エラー');																									
 };																									
 document.body.appendChild(script);																									
 }																									
@@ -280,17 +309,15 @@ triggerError(`❌ 順序エラー！次は【店舗${nextRequiredStore.storeNo}:
 return;																									
 }																									
 																									
-const currentCount = storeCounts[nextRequiredStore.storeCode] || 0;																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
-document.getElementById('modeTitle').innerText = `📦 必要個数をスキャン中 (${nextRequiredStore.storeName})`;																									
-showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をあと ${nextRequiredStore.qty - currentCount} 回スキャンしてください`, 'success');																									
+showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
-triggerError(`❌ 違う商品です！ (スキャンされたコード: ${barcode})`);																									
+triggerError(`❌ 違う商品です！`);																									
 return;																									
 }																									
 																									
@@ -306,18 +333,20 @@ sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);
 																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
 if (isAllCompleted) {																									
-alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
+alert(`🎉 この商品の全店舗へのピッキングが完了しました！（型番がグレーになります）`);																									
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
 switchMode('OUT_ITEM');																									
-showStatus('全店舗の出荷完了！（出荷データ入力シートおよびA1にグレー反映済み）', 'success');																									
+loadProgressList(); // リストを再読み込みしてグレーを反映																									
+showStatus('全店舗の出荷完了！', 'success');																									
 } else {																									
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`🎉 ${targetStore.storeName} 完了（シート反映完了）！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+showStatus(`🎉 ${targetStore.storeName} 完了！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
 }																									
 } else {																									
-showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
+showStatus(`3. OK (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
 }																									
 }																									
 																									
@@ -336,56 +365,24 @@ document.body.appendChild(script);
 																									
 function syncData() {																									
 showStatus('最新状態を同期中...', 'success');																									
-if (currentData && currentData.barcode) {																									
-fetchProductData(currentData.barcode);																									
-} else {																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
+document.getElementById('outArea').style.display = 'none';																									
+currentData = null;																									
+switchMode('OUT_ITEM');																									
+loadProgressList();																									
 setTimeout(() => {																									
 showStatus('データ同期が完了しました', 'success');																									
 }, 500);																									
 }																									
-}																									
-																									
-function prepareInItem(barcode) {																									
-document.getElementById('inItemInfo').innerText = `バーコード: ${barcode}`;																									
-document.getElementById('inInputForm').style.display = 'flex';																									
-showStatus('数量を入力して確定を押してください', 'success');																									
-}																									
-																									
-function submitInQty() {																									
-const qty = document.getElementById('inQtyInput').value;																									
-alert(`入荷登録完了: ${qty} 個`);																									
-document.getElementById('inInputForm').style.display = 'none';																									
-document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
-showStatus('入荷登録が完了しました', 'success');																									
-}																									
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-try {																									
-const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
-if (ctx.state === 'suspended') ctx.resume();																									
-																									
-const osc = ctx.createOscillator();																									
-const gain = ctx.createGain();																									
-																									
-osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(880, ctx.currentTime);																									
-gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
-																									
-osc.connect(gain);																									
-gain.connect(ctx.destination);																									
-																									
-osc.start();																									
-osc.stop(ctx.currentTime + 0.4);																									
-} catch (e) {}																									
-																									
-if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);																									
+if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
 }																									
 																									
 function renderProductData(data) {																									
 document.getElementById('outArea').style.display = 'block';																									
 document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
-document.getElementById('totalQty').innerText = data.totalQty;																									
 																									
 const listEl = document.getElementById('storeList');																									
 listEl.innerHTML = '';																									
@@ -401,10 +398,9 @@ div.innerHTML = `
 <div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
 ${store.storeNo}																									
 </div>																									
-																									
 <div style="flex-grow: 1;">																									
 <div style="font-size: 18px; font-weight: bold;">${store.storeName}</div>																									
-<div style="font-size: 13px; color: #666; margin-top: 1px;">店番: ${store.storeCode}</div>																									
+<div style="font-size: 13px; color: #666;">店番: ${store.storeCode}</div>																									
 <div style="font-size: 15px; margin-top: 4px;">																									
 投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
 </div>																									
@@ -413,7 +409,6 @@ ${store.storeNo}
 `;																									
 listEl.appendChild(div);																									
 });																									
-																									
 updateStoreUI();																									
 }																									
 																									
@@ -421,11 +416,9 @@ function updateStoreUI() {
 if (!currentData) return;																									
 const nextRequiredStore = getNextRequiredStore();																									
 																									
-let totalPicked = 0;																									
 currentData.stores.forEach(store => {																									
 const card = document.getElementById(`card-${store.storeCode}`);																									
 const count = storeCounts[store.storeCode] || 0;																									
-totalPicked += count;																									
 																									
 if (card) {																									
 document.getElementById(`count-${store.storeCode}`).innerText = count;																									
@@ -438,10 +431,6 @@ card.className = 'store-card';
 }																									
 }																									
 });																									
-																									
-document.getElementById('pickedQty').innerText = totalPicked;																									
-const percentage = currentData.totalQty > 0 ? (totalPicked / currentData.totalQty) * 100 : 0;																									
-document.getElementById('progressFill').style.width = `${percentage}%`;																									
 }																									
 																									
 function showStatus(msg, type) {																									
