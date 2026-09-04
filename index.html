@@ -216,6 +216,8 @@ isProcessing = false;
 }																									
 																									
 function handleScan(code) {																									
+playSuccessBeep(); // 読み込み成功時の「ピピッ」音																									
+																									
 if (currentMode === 'OUT_ITEM') {																									
 stopScan();																									
 fetchProductData(code);																									
@@ -373,7 +375,39 @@ showStatus('データ同期が完了しました', 'success');
 }, 500);																									
 }																									
 																									
-// 🔊 ブザー音を「ブーブー」と2回鳴らす関数																									
+// 🔊 成功時の「ピピッ」と高い音を2回鳴らす関数																									
+function playSuccessBeep() {																									
+try {																									
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+if (audioCtx.state === 'suspended') audioCtx.resume();																									
+																									
+// 1回目の「ピッ」																									
+const osc1 = audioCtx.createOscillator();																									
+const gain1 = audioCtx.createGain();																									
+osc1.type = 'sine'; // 柔らかい綺麗な電子音																									
+osc1.frequency.setValueAtTime(880, audioCtx.currentTime); // 高めの音 (A5)																									
+gain1.gain.setValueAtTime(0.2, audioCtx.currentTime);																									
+gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);																									
+osc1.connect(gain1);																									
+gain1.connect(audioCtx.destination);																									
+osc1.start(audioCtx.currentTime);																									
+osc1.stop(audioCtx.currentTime + 0.1);																									
+																									
+// 2回目の「ピッ」（0.12秒後）																									
+const osc2 = audioCtx.createOscillator();																									
+const gain2 = audioCtx.createGain();																									
+osc2.type = 'sine';																									
+osc2.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.12); // さらに高めの音 (D6)																									
+gain2.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.12);																									
+gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.22);																									
+osc2.connect(gain2);																									
+gain2.connect(audioCtx.destination);																									
+osc2.start(audioCtx.currentTime + 0.12);																									
+osc2.stop(audioCtx.currentTime + 0.22);																									
+} catch (e) {}																									
+}																									
+																									
+// 🔊 エラー時の「ブーブー」と2回鳴らす関数																									
 function playBuzzer() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -391,7 +425,7 @@ gain1.connect(audioCtx.destination);
 osc1.start(audioCtx.currentTime);																									
 osc1.stop(audioCtx.currentTime + 0.2);																									
 																									
-// 2回目の「ブー」（0.25秒後に開始）																									
+// 2回目の「ブー」（0.25秒後）																									
 const osc2 = audioCtx.createOscillator();																									
 const gain2 = audioCtx.createGain();																									
 osc2.type = 'sawtooth';																									
@@ -407,7 +441,7 @@ osc2.stop(audioCtx.currentTime + 0.45);
 																									
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
-if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]); // バイブも2回長めに																									
+if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);																									
 playBuzzer();																									
 }																									
 																									
