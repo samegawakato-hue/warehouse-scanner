@@ -77,7 +77,38 @@ color: #334155;
 .store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
 .store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
-video { width: 100%; border-radius: 8px; }																									
+																									
+/* カメラとガイド枠のスタイル */																									
+.scanner-wrapper {																									
+position: relative;																									
+width: 100%;																									
+overflow: hidden;																									
+border-radius: 8px;																									
+background: #000;																									
+}																									
+video { width: 100%; display: block; border-radius: 8px; }																									
+.scan-guide-box {																									
+position: absolute;																									
+top: 50%;																									
+left: 50%;																									
+transform: translate(-50%, -50%);																									
+width: 75%;																									
+height: 110px;																									
+border: 3px solid #10b981;																									
+border-radius: 10px;																									
+box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.45);																									
+pointer-events: none;																									
+display: flex;																									
+align-items: flex-start;																									
+justify-content: center;																									
+padding-top: 8px;																									
+color: #fff;																									
+font-size: 13px;																									
+font-weight: bold;																									
+text-shadow: 0 1px 3px rgba(0,0,0,0.9);																									
+z-index: 10;																									
+}																									
+																									
 input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
 </style>																									
 </head>																									
@@ -93,8 +124,11 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <div class="card">																									
 <div id="videoContainer" style="display:none; margin-top:10px;">																									
+<div class="scanner-wrapper">																									
 <video id="video"></video>																									
-<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8;">キャンセリスキャン</button>																									
+<div class="scan-guide-box">ここにバーコードを合わせてください</div>																									
+</div>																									
+<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセリスキャン</button>																									
 </div>																									
 <div id="status" class="status" style="display:none;"></div>																									
 </div>																									
@@ -216,8 +250,6 @@ isProcessing = false;
 }																									
 																									
 function handleScan(code) {																									
-// ここでの一律の成功音を廃止し、各処理の成功時のみ鳴らすように変更しました																									
-																									
 if (currentMode === 'OUT_ITEM') {																									
 stopScan();																									
 fetchProductData(code);																									
@@ -249,7 +281,7 @@ if (oldScript) oldScript.remove();
 window[callbackName] = function(data) {																									
 cleanup();																									
 if (data.success) {																									
-playSuccessBeep(); // 正常に商品が読み込めた時だけ鳴らす																									
+playSuccessBeep();																									
 currentData = data;																									
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
@@ -310,7 +342,7 @@ triggerError(`❌ 順序エラー！次は【店舗${nextRequiredStore.storeNo}:
 return;																									
 }																									
 																									
-playSuccessBeep(); // 店舗の箱の読み込みが成功した時																									
+playSuccessBeep();																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
 showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
@@ -323,7 +355,7 @@ triggerError(`❌ 違う商品です！`);
 return;																									
 }																									
 																									
-playSuccessBeep(); // 正しい商品（数える商品）の読み込みが成功した時																									
+playSuccessBeep();																									
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
 storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
@@ -378,7 +410,6 @@ showStatus('データ同期が完了しました', 'success');
 }, 500);																									
 }																									
 																									
-// 🔊 成功時の「ピピッ」と高い音を2回鳴らす関数																									
 function playSuccessBeep() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -408,7 +439,6 @@ osc2.stop(audioCtx.currentTime + 0.22);
 } catch (e) {}																									
 }																									
 																									
-// 🔊 エラー時の「ブーブー」と2回鳴らす関数																									
 function playBuzzer() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -505,4 +535,4 @@ el.style.display = 'block';
 }																									
 </script>																									
 </body>																									
-</html>																																																		
+</html>																									
