@@ -85,7 +85,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 																									
 <!-- アプリを開いた時の最初の画面：商品の進捗一覧（白＝未完了 / グレー＝完了） -->																									
 <div class="card" id="homeProgressCard">																									
-<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#2563eb;">📋 ピッキング進捗一覧（白:未完了 / 灰:完了）</div>																									
+<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#2563eb;">📋 ピッキング進捗一覧</div>																									
 <div id="progressListContainer">																									
 <div style="text-align:center; color:#64748b; padding:10px;">データを読み込み中...</div>																									
 </div>																									
@@ -131,7 +131,6 @@ let audioCtx = null;
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
-// 画面起動時に自動で進捗リストを取得して表示																									
 window.onload = function() {																									
 loadProgressList();																									
 };																									
@@ -171,7 +170,7 @@ return;
 products.forEach(p => {																									
 const div = document.createElement('div');																									
 const statusClass = p.isCompleted ? 'gray' : 'white';																									
-const badgeText = p.isCompleted ? '✅ 完了 (グレー)' : '⏳ 未完了 (白)';																									
+const badgeText = p.isCompleted ? '完了' : '未完了';																									
 																									
 div.className = `product-item ${statusClass}`;																									
 div.innerHTML = `																									
@@ -252,7 +251,6 @@ currentData = data;
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
 																									
-// トップの進捗一覧を一旦非表示にして詳細画面へ																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
@@ -333,12 +331,12 @@ sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);
 																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
 if (isAllCompleted) {																									
-alert(`🎉 この商品の全店舗へのピッキングが完了しました！（型番がグレーになります）`);																									
+alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
 switchMode('OUT_ITEM');																									
-loadProgressList(); // リストを再読み込みしてグレーを反映																									
+loadProgressList();																									
 showStatus('全店舗の出荷完了！', 'success');																									
 } else {																									
 switchMode('OUT_STORE');																									
@@ -375,7 +373,7 @@ showStatus('データ同期が完了しました', 'success');
 }, 500);																									
 }																									
 																									
-// ⚠️ エラー時にブザー音とバイブレーションを鳴らす関数																									
+// 警告用ブザー音を鳴らす関数																									
 function playBuzzer() {																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -383,8 +381,8 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 																									
 const osc = audioCtx.createOscillator();																									
 const gain = audioCtx.createGain();																									
-osc.type = 'sawtooth'; // 不快感のある（警告に適した）波形																									
-osc.frequency.setValueAtTime(280, audioCtx.currentTime); // 低めのブザー音																									
+osc.type = 'sawtooth';																									
+osc.frequency.setValueAtTime(280, audioCtx.currentTime);																									
 																									
 gain.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);																									
@@ -400,7 +398,7 @@ osc.stop(audioCtx.currentTime + 0.35);
 function triggerError(msg) {																									
 showStatus(msg, 'error');																									
 if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
-playBuzzer(); // ブザー音を追加																									
+playBuzzer();																									
 }																									
 																									
 function renderProductData(data) {																									
