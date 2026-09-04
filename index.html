@@ -3,470 +3,86 @@
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>ピッキング管理</title>																									
-<script src="https://unpkg.com/@zxing/library@latest"></script>																									
+<title>ピッキング管理アプリ</title>																									
 <style>																									
-body {																									
-font-family: -apple-system, sans-serif;																									
-background: #f4f6f9;																									
-margin: 0;																									
-padding: 12px;																									
-padding-bottom: 220px;																									
-}																									
-.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
-.top-btn-container { margin-bottom: 10px; }																									
-.bottom-btn-container {																									
-position: fixed;																									
-bottom: 0;																									
-left: 0;																									
-right: 0;																									
-background: #fff;																									
-padding: 12px;																									
-box-shadow: 0 -2px 10px rgba(0,0,0,0.1);																									
-display: flex;																									
-flex-direction: column;																									
-gap: 10px;																									
-z-index: 1000;																									
-}																									
-.mode-btn-full {																									
-width: 100%;																									
-background: #e2e8f0;																									
-color: #334155;																									
-border: none;																									
-padding: 12px;																									
-border-radius: 8px;																									
-font-size: 14px;																									
-font-weight: bold;																									
-cursor: pointer;																									
-text-align: center;																									
-box-sizing: border-box;																									
-}																									
-.btn-action-full {																									
-width: 100%;																									
-background: #10b981;																									
-color: white;																									
-border: none;																									
-padding: 18px;																									
-border-radius: 10px;																									
-font-size: 18px;																									
-font-weight: bold;																									
-cursor: pointer;																									
-box-sizing: border-box;																									
-text-align: center;																									
-}																									
-.btn-sync {																									
-width: 100%;																									
-background: #64748b;																									
-color: white;																									
-border: none;																									
-padding: 16px;																									
-border-radius: 10px;																									
-font-size: 16px;																									
-font-weight: bold;																									
-cursor: pointer;																									
-box-sizing: border-box;																									
-text-align: center;																									
-}																									
-.select-sort {																									
-width: 100%;																									
-padding: 12px;																									
-border-radius: 8px;																									
-border: 1px solid #cbd5e1;																									
-font-size: 15px;																									
-font-weight: bold;																									
-background: #f8fafc;																									
-color: #334155;																									
-box-sizing: border-box;																									
-}																									
-.status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; white-space: pre-wrap; }																									
-.status.success { background: #dcfce7; color: #15803d; }																									
-.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
-.big-num { font-size: 28px; font-weight: bold; color: #2563eb; }																									
-.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
-.store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
-.store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
-video { width: 100%; border-radius: 8px; }																									
-input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
-.progress-bar-bg { background: #e2e8f0; border-radius: 6px; height: 12px; width: 100%; margin-top: 6px; overflow: hidden; }																									
-.progress-bar-fill { background: #2563eb; height: 100%; width: 0%; transition: width 0.3s; }																									
+body { font-family: sans-serif; text-align: center; padding: 20px; background-color: #f9f9f9; }																									
+h1 { font-size: 24px; color: #333; }																									
+#progress { font-size: 26px; font-weight: bold; margin: 25px 0; color: #0066cc; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }																									
+input[type="text"] { font-size: 20px; padding: 12px; width: 80%; max-width: 300px; margin-bottom: 15px; box-sizing: border-box; }																									
+button { font-size: 22px; padding: 15px 30px; background-color: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; width: 80%; max-width: 300px; }																									
+button:active { background-color: #218838; }																									
+#status { font-size: 18px; margin-top: 20px; font-weight: bold; color: #555; }																									
 </style>																									
 </head>																									
 <body>																									
 																									
-<div class="top-btn-container">																									
-<button id="btnInItem" class="mode-btn-full" onclick="switchMode('IN_ITEM')">📥 入荷商品モード切り替え</button>																									
+<h1>ピッキング検品アプリ</h1>																									
+																									
+<!-- 進捗表示エリア -->																									
+<div id="progress">進捗: 0 / 0 完了</div>																									
+																									
+<div>																									
+<input type="text" id="barcodeInput" placeholder="バーコードをスキャン" autofocus>																									
+</div>																									
+<div>																									
+<button onclick="submitBarcode()">送信する</button>																									
 </div>																									
 																									
-<div class="card">																									
-<div id="modeTitle" style="font-weight:bold; font-size:14px; margin-bottom:8px; color:#2563eb;">MODE: 出荷商品スキャン（総個数確認）</div>																									
-																									
-<div id="videoContainer" style="display:none; margin-top:10px;">																									
-<video id="video"></video>																									
-<button onclick="stopScan()" class="mode-btn-full" style="margin-top:5px; background:#94a3b8; color:#fff;">キャンセリスキャン</button>																									
-</div>																									
-																									
-<div id="status" class="status" style="display:none;"></div>																									
-</div>																									
-																									
-<div id="outArea" class="card" style="display:none;">																									
-<div style="text-align:center;">																									
-<h3 id="itemTitle" style="margin:0;">商品ピッキング</h3>																									
-<div id="itemSub" style="color:#64748b; font-size:12px;"></div>																									
-<div style="margin-top:6px;">進捗状況: <span id="pickedQty" class="big-num">0</span> / <span id="totalQty" class="big-num">0</span> 個</div>																									
-<div class="progress-bar-bg">																									
-<div id="progressFill" class="progress-bar-fill"></div>																									
-</div>																									
-</div>																									
-<hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
-<div id="storeList"></div>																									
-</div>																									
-																									
-<div id="inArea" class="card" style="display:none;">																									
-<h3>入荷登録</h3>																									
-<div id="inItemInfo" style="font-weight:bold; margin-bottom:10px;">商品をスキャンしてください</div>																									
-<div id="inInputForm" style="display:none; align-items:center; gap:10px;">																									
-<label>入荷数量:</label>																									
-<input type="number" id="inQtyInput" value="1" min="1">																									
-<button class="btn-action-full" style="width:auto; padding:8px 16px;" onclick="submitInQty()">確定</button>																									
-</div>																									
-</div>																									
-																									
-<div class="bottom-btn-container">																									
-<select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
-<option value="false">正順 (店舗 1 → 10)</option>																									
-<option value="true">逆順 (店舗 10 → 1)</option>																									
-</select>																									
-<button id="scanBtn" class="btn-action-full">📷 スキャン開始</button>																									
-<button id="btnSyncProgress" class="btn-sync" onclick="syncData()">🔄 データ同期・更新</button>																									
-</div>																									
+<div id="status">準備完了</div>																									
 																									
 <script>																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
+// デプロイしたGASのウェブアプリURLをここに貼り付けてください																									
+const GAS_URL = "ここにGASのウェブアプリURLを貼り付け";																									
 																									
-const codeReader = new ZXing.BrowserMultiFormatReader();																									
-let currentMode = 'OUT_ITEM';																									
-let currentData = null;																									
-let activeStoreCode = null;																									
-let storeCounts = {};																									
-let isProcessing = false;																									
-let audioCtx = null;																									
+async function submitBarcode() {																									
+const inputField = document.getElementById('barcodeInput');																									
+const barcodeData = inputField.value.trim();																									
 																									
-document.getElementById('scanBtn').addEventListener('click', startScan);																									
-																									
-function switchMode(mode) {																									
-currentMode = mode;																									
-document.getElementById('status').style.display = 'none';																									
-																									
-const titleEl = document.getElementById('modeTitle');																									
-if (mode === 'OUT_ITEM') {																									
-titleEl.innerText = 'MODE: 出荷商品スキャン（総個数確認）';																									
-document.getElementById('inArea').style.display = 'none';																									
-} else if (mode === 'IN_ITEM') {																									
-titleEl.innerText = 'MODE: 入荷商品スキャン（個数手入力）';																									
-document.getElementById('inArea').style.display = 'block';																									
-document.getElementById('outArea').style.display = 'none';																									
-}																									
+if (!barcodeData) {																									
+alert("バーコードを入力・スキャンしてください");																									
+return;																									
 }																									
 																									
-function onSortChange() {																									
-if (currentData) {																									
-currentData.stores.reverse();																									
-renderProductData(currentData);																									
-const nextStore = getNextRequiredStore();																									
-if (nextStore) {																									
-showStatus(`並び順を変更しました。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-}																									
-}																									
-}																									
+document.getElementById('status').innerText = "送信中...";																									
+document.getElementById('status').style.color = "#0066cc";																									
 																									
-function startScan() {																									
-isProcessing = false;																									
 try {																									
-if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
-if (audioCtx.state === 'suspended') audioCtx.resume();																									
-} catch (e) {}																									
+const response = await fetch(GAS_URL, {																									
+method: "POST",																									
+body: JSON.stringify({ barcode: barcodeData })																									
+});																									
+const result = await response.json();																									
 																									
-document.getElementById('videoContainer').style.display = 'block';																									
-codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
-if (result && !isProcessing) {																									
-isProcessing = true;																									
-handleScan(result.text);																									
+if (result.status === "success") {																									
+document.getElementById('progress').innerText =																									
+進捗:  + result.completedCount + " / " + result.totalCount + " 完了";																									
+document.getElementById('status').innerText = "送信成功！完了しました";																									
+document.getElementById('status').style.color = "green";																									
+																									
+// 入力欄をクリアして次のスキャンに備える																									
+inputField.value = "";																									
+inputField.focus();																									
+																									
+if (navigator.vibrate) navigator.vibrate(100);																									
+} else if (result.status === "not_found") {																									
+document.getElementById('status').innerText = "該当するバーコードが見つかりません";																									
+document.getElementById('status').style.color = "orange";																									
+} else {																									
+document.getElementById('status').innerText = "エラー: " + result.message;																									
+document.getElementById('status').style.color = "red";																									
+}																									
+} catch (error) {																									
+document.getElementById('status').innerText = "通信エラーが発生しました";																									
+document.getElementById('status').style.color = "red";																									
+}																									
+}																									
+																									
+// Enterキーでも送信できるようにする																									
+document.getElementById('barcodeInput').addEventListener('keypress', function (e) {																									
+if (e.key === 'Enter') {																									
+submitBarcode();																									
 }																									
 });																									
-}																									
-																									
-function stopScan() {																									
-codeReader.reset();																									
-document.getElementById('videoContainer').style.display = 'none';																									
-isProcessing = false;																									
-}																									
-																									
-function handleScan(code) {																									
-if (currentMode === 'OUT_ITEM') {																									
-stopScan();																									
-fetchProductData(code);																									
-} else if (currentMode === 'OUT_STORE') {																									
-stopScan();																									
-verifyStoreScan(code);																									
-} else if (currentMode === 'OUT_NEED') {																									
-countNeedItemScan(code);																									
-} else if (currentMode === 'IN_ITEM') {																									
-stopScan();																									
-prepareInItem(code);																									
-}																									
-}																									
-																									
-function fetchProductData(barcode) {																									
-showStatus('出荷データ入力シートから読み込み中...', 'success');																									
-const isReverse = document.getElementById('sortOrder').value;																									
-const callbackName = 'cb_' + Date.now();																									
-																									
-const timer = setTimeout(() => {																									
-cleanup();																									
-triggerError('通信タイムアウト：GASの設定を確認してください');																									
-}, 10000);																									
-																									
-function cleanup() {																									
-clearTimeout(timer);																									
-if (window[callbackName]) delete window[callbackName];																									
-const oldScript = document.getElementById(callbackName);																									
-if (oldScript) oldScript.remove();																									
-}																									
-																									
-window[callbackName] = function(data) {																									
-cleanup();																									
-if (data.success) {																									
-currentData = data;																									
-storeCounts = {};																									
-data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
-																									
-renderProductData(data);																									
-currentMode = 'OUT_STORE';																									
-stopScan();																									
-																									
-const nextStore = getNextRequiredStore();																									
-if (!nextStore) {																									
-showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
-currentMode = 'OUT_ITEM';																									
-} else {																									
-showStatus(`1. 商品確認完了。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-}																									
-} else {																									
-triggerError(data.error || '未登録の商品です');																									
-}																									
-};																									
-																									
-const script = document.createElement('script');																									
-script.id = callbackName;																									
-script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
-script.onerror = function() {																									
-cleanup();																									
-triggerError('通信エラー：接続できませんでした');																									
-};																									
-document.body.appendChild(script);																									
-}																									
-																									
-function getNextRequiredStore() {																									
-if (!currentData || !currentData.stores) return null;																									
-return currentData.stores.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
-}																									
-																									
-function verifyStoreScan(storeCode) {																									
-if (!currentData) {																									
-triggerError('先に「出荷商品」をスキャンしてください');																									
-return;																									
-}																									
-																									
-const nextRequiredStore = getNextRequiredStore();																									
-if (!nextRequiredStore) {																									
-triggerError('すべての店舗へのピッキングが完了しています');																									
-return;																									
-}																									
-																									
-const scanned = String(storeCode).trim();																									
-const match = [																									
-String(nextRequiredStore.storeCode).trim(),																									
-String(nextRequiredStore.storeNo).trim(),																									
-String(nextRequiredStore.storeName).trim()																									
-].includes(scanned);																									
-																									
-if (!match) {																									
-triggerError(`❌ 順序エラー！次は【店舗${nextRequiredStore.storeNo}: ${nextRequiredStore.storeName}】の箱をスキャンしてください！`);																									
-return;																									
-}																									
-																									
-const currentCount = storeCounts[nextRequiredStore.storeCode] || 0;																									
-activeStoreCode = nextRequiredStore.storeCode;																									
-currentMode = 'OUT_NEED';																									
-document.getElementById('modeTitle').innerText = `MODE: 商品必要個数をスキャン中 (${nextRequiredStore.storeName})`;																									
-showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をあと ${nextRequiredStore.qty - currentCount} 回スキャンしてください`, 'success');																									
-}																									
-																									
-function countNeedItemScan(barcode) {																									
-if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
-stopScan();																									
-triggerError(`❌ 違う商品です！ (スキャンされたコード: ${barcode})`);																									
-return;																									
-}																									
-																									
-const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
-storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
-const count = storeCounts[activeStoreCode];																									
-																									
-updateStoreUI();																									
-stopScan();																									
-																									
-if (count >= targetStore.qty) {																									
-sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);																									
-																									
-const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
-if (isAllCompleted) {																									
-alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
-currentData = null;																									
-document.getElementById('outArea').style.display = 'none';																									
-currentMode = 'OUT_ITEM';																									
-showStatus('全店舗の出荷完了！（出荷データ入力シートにグレー反映済み）', 'success');																									
-} else {																									
-currentMode = 'OUT_STORE';																									
-const nextStore = getNextRequiredStore();																									
-showStatus(`🎉 ${targetStore.storeName} 完了（シートにグレー反映完了）！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
-}																									
-} else {																									
-showStatus(`3. OK (${count}/${targetStore.qty}個) - 「スキャン開始」を押して次の1個をスキャン`, 'success');																									
-}																									
-}																									
-																									
-function sendStoreCompletionToGAS(barcode, storeCode, qty) {																									
-const callbackName = 'cb_store_' + Date.now();																									
-																									
-window[callbackName] = function(res) {																									
-delete window[callbackName];																									
-const oldScript = document.getElementById(callbackName);																									
-if (oldScript) oldScript.remove();																									
-};																									
-																									
-const script = document.createElement('script');																									
-script.id = callbackName;																									
-script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(storeCode)}&count=${qty}&callback=${callbackName}&_t=${Date.now()}`;																									
-document.body.appendChild(script);																									
-}																									
-																									
-function syncData() {																									
-showStatus('最新状態を同期中...', 'success');																									
-if (currentData && currentData.barcode) {																									
-fetchProductData(currentData.barcode);																									
-} else {																									
-setTimeout(() => {																									
-showStatus('データ同期が完了しました', 'success');																									
-}, 500);																									
-}																									
-}																									
-																									
-function prepareInItem(barcode) {																									
-document.getElementById('inItemInfo').innerText = `バーコード: ${barcode}`;																									
-document.getElementById('inInputForm').style.display = 'flex';																									
-showStatus('数量を入力して確定を押してください', 'success');																									
-}																									
-																									
-function submitInQty() {																									
-const qty = document.getElementById('inQtyInput').value;																									
-alert(`入荷登録完了: ${qty} 個`);																									
-document.getElementById('inInputForm').style.display = 'none';																									
-document.getElementById('inItemInfo').innerText = '商品をスキャンしてください';																									
-showStatus('入荷登録が完了しました', 'success');																									
-}																									
-																									
-function triggerError(msg) {																									
-showStatus(msg, 'error');																									
-try {																									
-const ctx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();																									
-if (ctx.state === 'suspended') ctx.resume();																									
-																									
-const osc = ctx.createOscillator();																									
-const gain = ctx.createGain();																									
-																									
-osc.type = 'sawtooth';																									
-osc.frequency.setValueAtTime(880, ctx.currentTime);																									
-gain.gain.setValueAtTime(0.5, ctx.currentTime);																									
-																									
-osc.connect(gain);																									
-gain.connect(ctx.destination);																									
-																									
-osc.start();																									
-osc.stop(ctx.currentTime + 0.4);																									
-} catch (e) {}																									
-																									
-if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);																									
-}																									
-																									
-function renderProductData(data) {																									
-document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
-document.getElementById('totalQty').innerText = data.totalQty;																									
-																									
-const listEl = document.getElementById('storeList');																									
-listEl.innerHTML = '';																									
-																									
-data.stores.forEach(store => {																									
-const div = document.createElement('div');																									
-div.className = 'store-card';																									
-div.id = `card-${store.storeCode}`;																									
-																									
-div.innerHTML = `																									
-<div style="display: flex; align-items: center; gap: 12px;">																									
-<div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
-<div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
-${store.storeNo}																									
-</div>																									
-																									
-<div style="flex-grow: 1;">																									
-<div style="font-size: 18px; font-weight: bold;">${store.storeName}</div>																									
-<div style="font-size: 13px; color: #666; margin-top: 1px;">店番: ${store.storeCode}</div>																									
-<div style="font-size: 15px; margin-top: 4px;">																									
-投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
-</div>																									
-</div>																									
-</div>																									
-`;																									
-listEl.appendChild(div);																									
-});																									
-																									
-updateStoreUI();																									
-}																									
-																									
-function updateStoreUI() {																									
-if (!currentData) return;																									
-const nextRequiredStore = getNextRequiredStore();																									
-																									
-let totalPicked = 0;																									
-currentData.stores.forEach(store => {																									
-const card = document.getElementById(`card-${store.storeCode}`);																									
-const count = storeCounts[store.storeCode] || 0;																									
-totalPicked += count;																									
-																									
-if (card) {																									
-document.getElementById(`count-${store.storeCode}`).innerText = count;																									
-if (count >= store.qty) {																									
-card.className = 'store-card done';																									
-} else if (nextRequiredStore && String(store.storeCode) === String(nextRequiredStore.storeCode)) {																									
-card.className = 'store-card next-target';																									
-} else {																									
-card.className = 'store-card';																									
-}																									
-}																									
-});																									
-																									
-document.getElementById('pickedQty').innerText = totalPicked;																									
-const percentage = currentData.totalQty > 0 ? (totalPicked / currentData.totalQty) * 100 : 0;																									
-document.getElementById('progressFill').style.width = `${percentage}%`;																									
-}																									
-																									
-function showStatus(msg, type) {																									
-const el = document.getElementById('status');																									
-el.innerText = msg;																									
-el.className = `status ${type}`;																									
-el.style.display = 'block';																									
-}																									
 </script>																									
 </body>																									
 </html>																									
