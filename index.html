@@ -247,7 +247,6 @@ if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)
 if (audioCtx.state === 'suspended') audioCtx.resume();																									
 } catch (e) {}																									
 																									
-// カメラ起動時に最上部のカードを表示し、他の画面を隠す																									
 document.getElementById('videoCard').style.display = 'block';																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
@@ -263,7 +262,6 @@ handleScan(result.text);
 function stopScan() {																									
 codeReader.reset();																									
 document.getElementById('videoCard').style.display = 'none';																									
-// スキャン停止時は状態に応じて画面を復元																									
 if (currentData) {																									
 document.getElementById('outArea').style.display = 'block';																									
 } else {																									
@@ -285,7 +283,7 @@ countNeedItemScan(code);
 }																									
 																									
 function fetchProductData(barcode) {																									
-showStatus('出荷データ入力シートから読み込み中...', 'success');																									
+showStatus('スキャン成功！出荷データ入力シートから読み込み中...', 'success');																									
 const isReverse = document.getElementById('sortOrder').value;																									
 const callbackName = 'cb_' + Date.now();																									
 																									
@@ -319,10 +317,10 @@ if (!nextStore) {
 showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
 switchMode('OUT_ITEM');																									
 } else {																									
-showStatus(`1. 商品確認OK。次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
+showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(data.error || '未登録の商品です');																									
+triggerError(`❌ 正しいバーコードをスキャンしてください\n(未登録の商品です)`);																									
 }																									
 };																									
 																									
@@ -331,7 +329,7 @@ script.id = callbackName;
 script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
 script.onerror = function() {																									
 cleanup();																									
-triggerError('通信エラー');																									
+triggerError(`❌ 正しいバーコードをスキャンしてください\n(通信エラー)`);																									
 };																									
 document.body.appendChild(script);																									
 }																									
@@ -361,20 +359,20 @@ String(nextRequiredStore.storeName).trim()
 ].includes(scanned);																									
 																									
 if (!match) {																									
-triggerError(`❌ 順序エラー！次は【店舗${nextRequiredStore.storeNo}: ${nextRequiredStore.storeName}】の箱をスキャンしてください！`);																									
+triggerError(`❌ 正しいバーコードをスキャンしてください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
 return;																									
 }																									
 																									
 playSuccessBeep();																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
-showStatus(`2. 店舗確認OK (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
+showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
-triggerError(`❌ 違う商品です！`);																									
+triggerError(`❌ 正しいバーコードをスキャンしてください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
 return;																									
 }																									
 																									
@@ -401,10 +399,10 @@ showStatus('全店舗の出荷完了！', 'success');
 } else {																									
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`🎉 ${targetStore.storeName} 完了！次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
 }																									
 } else {																									
-showStatus(`3. OK (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
+showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
 }																									
 }																									
 																									
