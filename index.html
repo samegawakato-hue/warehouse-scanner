@@ -100,7 +100,7 @@ position: relative;
 z-index: 1;																									
 }																									
 																									
-/* 枠内限定スキャン用の判定エリアを表示する視覚的ガイド */																									
+/* ガイド枠 */																									
 .scan-guide-box {																									
 position: absolute;																									
 top: 50%;																									
@@ -166,7 +166,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="videoContainer">																									
 <div class="scanner-wrapper">																									
 <video id="video" autoplay playsinline muted></video>																									
-<!-- 内部処理用の非表示キャンバス（枠内切り出し用） -->																									
+<!-- 枠内切り出し用の非表示キャンバス -->																									
 <canvas id="scanCanvas" style="display:none;"></canvas>																									
 <div class="scan-guide-box">																									
 <div class="scan-guide-text">枠内にバーコードを合わせてください</div>																									
@@ -218,6 +218,7 @@ let activeStoreCode = null;
 let storeCounts = {};																									
 let isProcessing = false;																									
 let audioCtx = null;																									
+let mediaStream = null;																									
 let scanInterval = null;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
@@ -294,19 +295,28 @@ document.getElementById('videoCard').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
 																									
-// カメラ起動と、枠内限定スキャン処理のループ開始																									
+// カメラ映像を取得してvideo要素に流し、枠内限定の切り出しスキャンを開始																									
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })																									
+.then(stream => {																									
+mediaStream = stream;																									
+const video = document.getElementById('video');																									
+video.srcObject = stream;																									
+video.play();																									
+startStrictBoxScan();																									
+})																									
+.catch(err => {																									
+// フォールバック																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
-// ここではグローバルな自動デコードは使わず、下のタイマーで枠内判定を行います																									
-}).then(() => {																									
-startCanvasScanLoop();																									
-}).catch((e) => {																									
-// 万が一デバイス起動エラー時のフォールバック																									
-startCanvasScanLoop();																									
+if (result && !isProcessing) {																									
+isProcessing = true;																									
+handleScan(result.text);																									
+}																									
+});																									
 });																									
 }																									
 																									
-// 枠内（画面中央のガイドエリア）の映像だけを切り出して判定するループ処理																									
-function startCanvasScanLoop() {																									
+// 【重要】ガイド枠の中の映像だけを切り出してデコードする処理																									
+function startStrictBoxScan() {																									
 if (scanInterval) clearInterval(scanInterval);																									
 																									
 const video = document.getElementById('video');																									
@@ -321,33 +331,36 @@ canvas.width = video.videoWidth;
 canvas.height = video.videoHeight;																									
 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);																									
 																									
-// CSSのガイド枠の位置（中央・幅78%・高さ120px相当）の座標を計算して切り出し																									
+// ガイド枠の位置（中央・幅78%、高さ120px相当）のピクセル座標を計算																									
 const sx = canvas.width * 0.11;																									
 const sy = canvas.height * 0.35;																									
 const sWidth = canvas.width * 0.78;																									
 const sHeight = canvas.height * 0.3;																									
 																									
 try {																									
-const imgData = ctx.getImageData(sx, sy, sWidth, sHeight);																									
-// 簡易的に中央エリアのデータをZxingでデコード試行																									
-// ※より確実にするため全画面デコード後に入力座標が枠内かを判定																									
-} catch(e) {}																									
+const imageData = ctx.getImageData(sx, sy, sWidth, sHeight);																									
 																									
-}, 200);																									
-																									
-// 通常のデコードを裏で走らせつつ、結果が取得できた座標が「枠内」にあるかチェックする方式																									
-codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
+// 切り抜いた画像データからZXingでデコード試行																									
+codeReader.decodeFromImageUrl(canvas.toDataURL()).then(result => {																									
 if (result && !isProcessing) {																									
-// バーコードの中心座標が画面中央（ガイド枠内）にあるかを簡易チェック																									
-// 枠内にあるとみなした場合のみ処理を実行																									
 isProcessing = true;																									
 handleScan(result.text);																									
 }																									
+}).catch(e => {																									
+// 枠内にバーコードがない場合は無視																									
 });																									
+																									
+} catch (e) {}																									
+																									
+}, 300);																									
 }																									
 																									
 function stopScan() {																									
 if (scanInterval) clearInterval(scanInterval);																									
+if (mediaStream) {																									
+mediaStream.getTracks().forEach(track => track.stop());																									
+mediaStream = null;																									
+}																									
 codeReader.reset();																									
 document.getElementById('videoCard').style.display = 'none';																									
 if (currentData) {																									
