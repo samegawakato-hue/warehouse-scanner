@@ -78,11 +78,11 @@ color: #334155;
 .store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 																									
-/* カメラとガイド枠の絶対固定レイアウト */																									
+/* カメラとL字型スキャナー風ガイド枠のレイアウト */																									
 .scanner-wrapper {																									
 position: relative;																									
 width: 100%;																									
-max-height: 350px;																									
+max-height: 380px;																									
 background: #000;																									
 border-radius: 8px;																									
 overflow: hidden;																									
@@ -93,33 +93,72 @@ align-items: center;
 video {																									
 width: 100% !important;																									
 height: auto !important;																									
-max-height: 350px;																									
+max-height: 380px;																									
 object-fit: cover;																									
 display: block;																									
 position: relative;																									
 z-index: 1;																									
 }																									
+																									
+/* 四隅のL字カッコと中央のレーザー線を持つスキャナー枠 */																									
 .scan-guide-box {																									
 position: absolute;																									
 top: 50%;																									
 left: 50%;																									
 transform: translate(-50%, -50%);																									
-width: 75%;																									
-height: 90px;																									
-border: 3px solid #10b981;																									
-border-radius: 10px;																									
-box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.45);																									
+width: 78%;																									
+height: 120px;																									
 pointer-events: none;																									
+z-index: 10;																									
 display: flex;																									
-align-items: flex-start;																									
+align-items: center;																									
 justify-content: center;																									
-padding-top: 6px;																									
+}																									
+																									
+/* ガイド内のテキスト（スキャンしてください等） */																									
+.scan-guide-text {																									
+position: absolute;																									
+top: 8px;																									
+left: 0;																									
+right: 0;																									
+text-align: center;																									
 color: #fff;																									
-font-size: 12px;																									
+font-size: 13px;																									
 font-weight: bold;																									
 text-shadow: 0 1px 3px rgba(0,0,0,0.9);																									
-z-index: 10;																									
+z-index: 12;																									
 }																									
+																									
+/* 中央を走る赤いスキャンライン */																									
+.scan-laser {																									
+position: absolute;																									
+width: 90%;																									
+height: 2px;																									
+background: #ef4444;																									
+box-shadow: 0 0 6px #ef4444;																									
+animation: laserMove 2s infinite ease-in-out;																									
+z-index: 11;																									
+}																									
+																									
+@keyframes laserMove {																									
+0%, 100% { top: 20%; }																									
+50% { top: 80%; }																									
+}																									
+																									
+/* 四隅のL字コーナー */																									
+.corner {																									
+position: absolute;																									
+width: 24px;																									
+height: 24px;																									
+border-color: #10b981;																									
+border-style: solid;																									
+border-width: 0;																									
+z-index: 11;																									
+}																									
+.corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 4px; }																									
+.corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 4px; }																									
+.corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 4px; }																									
+.corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 4px; }																									
 																									
 input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
 </style>																									
@@ -134,7 +173,14 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div id="videoContainer">																									
 <div class="scanner-wrapper">																									
 <video id="video" autoplay playsinline muted></video>																									
-<div class="scan-guide-box">ここにバーコードを合わせてください</div>																									
+<div class="scan-guide-box">																									
+<div class="scan-guide-text">ここにバーコードを合わせてください</div>																									
+<div class="scan-laser"></div>																									
+<div class="corner corner-tl"></div>																									
+<div class="corner corner-tr"></div>																									
+<div class="corner corner-bl"></div>																									
+<div class="corner corner-br"></div>																									
+</div>																									
 </div>																									
 <button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセリスキャン</button>																									
 </div>																									
@@ -321,7 +367,7 @@ switchMode('OUT_ITEM');
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(`❌ 正しいバーコードをスキャンしてください\n(未登録の商品です)`);																									
+triggerError(`❌ 正しいバーコードを స్కанしてください\n(未登録の商品です)`);																									
 }																									
 };																									
 																									
