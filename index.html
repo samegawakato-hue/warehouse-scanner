@@ -62,9 +62,9 @@ font-weight: bold;
 background: #f8fafc;																									
 color: #334155;																									
 }																									
-.status { padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 8px; text-align: center; white-space: pre-wrap; }																									
-.status.success { background: #dcfce7; color: #15803d; }																									
-.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; }																									
+.status { padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-align: center; white-space: pre-wrap; font-size: 15px; }																									
+.status.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }																									
+.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; border: 1px solid #fecaca; }																									
 																									
 /* 進捗リストのスタイル */																									
 .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; }																									
@@ -126,7 +126,10 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- カメラ起動時に一番上に表示されるコンテナ -->																									
+<!-- 常時見えるステータス表示エリア（一番上に配置） -->																									
+<div id="status" class="status" style="display:none;"></div>																									
+																									
+<!-- カメラ起動時に表示されるコンテナ -->																									
 <div class="card" id="videoCard" style="display:none;">																									
 <div id="videoContainer">																									
 <div class="scanner-wrapper">																									
@@ -135,7 +138,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 <button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセリスキャン</button>																									
 </div>																									
-<div id="status" class="status" style="display:none;"></div>																									
 </div>																									
 																									
 <!-- アプリを開いた時の最初の画面：商品の進捗一覧 -->																									
@@ -230,7 +232,6 @@ container.appendChild(div);
 																									
 function switchMode(mode) {																									
 currentMode = mode;																									
-document.getElementById('status').style.display = 'none';																									
 }																									
 																									
 function onSortChange() {																									
