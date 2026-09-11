@@ -11,9 +11,32 @@ font-family: -apple-system, sans-serif;
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 240px;																									
+padding-bottom: 200px;																									
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
+																									
+/* 画面右上の同期ボタン固定用ヘッダー */																									
+.top-right-header {																									
+position: fixed;																									
+top: 10px;																									
+right: 12px;																									
+z-index: 1000;																									
+}																									
+.btn-sync-top {																									
+background: #2563eb;																									
+color: white;																									
+border: none;																									
+padding: 8px 12px;																									
+border-radius: 8px;																									
+font-size: 13px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+box-shadow: 0 2px 5px rgba(0,0,0,0.2);																									
+display: flex;																									
+align-items: center;																									
+gap: 4px;																									
+}																									
+																									
 .bottom-btn-container {																									
 position: fixed;																									
 bottom: 0;																									
@@ -32,13 +55,14 @@ width: 100%;
 background: #10b981;																									
 color: white;																									
 border: none;																									
-padding: 18px;																									
+padding: 22px; /* 高さを出して大きく変更 */																									
 border-radius: 10px;																									
-font-size: 18px;																									
+font-size: 19px;																									
 font-weight: bold;																									
 cursor: pointer;																									
 box-sizing: border-box;																									
 text-align: center;																									
+box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);																									
 }																									
 .btn-sync {																									
 width: 100%;																									
@@ -158,6 +182,11 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
+<!-- 画面右上のデータ同期・更新ボタン -->																									
+<div class="top-right-header">																									
+<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 同期・更新</button>																									
+</div>																									
+																									
 <!-- 常時見えるステータス表示エリア -->																									
 <div id="status" class="status" style="display:none;"></div>																									
 																									
@@ -203,7 +232,6 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
 <button id="scanBtn" class="btn-action-full">📷 スキャン開始（商品または箱）</button>																									
-<button id="btnSyncProgress" class="btn-sync" onclick="syncData()">🔄 データ同期・更新</button>																									
 </div>																									
 																									
 <script>																									
@@ -293,12 +321,10 @@ document.getElementById('videoCard').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
 																									
-// ZXingのデコード処理と、バーコードの位置座標（BoundingBox）による厳密な枠内判定																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
 if (result && !isProcessing) {																									
 const points = result.getResultPoints();																									
 if (points && points.length > 0) {																									
-// バーコードの検出位置の平均X, Y座標を計算																									
 let sumX = 0, sumY = 0;																									
 points.forEach(p => {																									
 sumX += p.getX();																									
@@ -312,19 +338,16 @@ const vWidth = videoEl.videoWidth || videoEl.clientWidth;
 const vHeight = videoEl.videoHeight || videoEl.clientHeight;																									
 																									
 if (vWidth > 0 && vHeight > 0) {																									
-// 画面中央のガイド枠に対応するピクセル座標範囲（幅78%、高さ120px相当の中央エリア）																									
 const minX = vWidth * 0.11;																									
 const maxX = vWidth * 0.89;																									
 const minY = vHeight * 0.35;																									
 const maxY = vHeight * 0.65;																									
 																									
-// バーコードの中心が枠内に収まっている場合のみ処理を実行																									
 if (avgX >= minX && avgX <= maxX && avgY >= minY && avgY <= maxY) {																									
 isProcessing = true;																									
 handleScan(result.text);																									
 }																									
 } else {																									
-// 万が一サイズが取得できない場合のフォールバック																									
 isProcessing = true;																									
 handleScan(result.text);																									
 }																									
