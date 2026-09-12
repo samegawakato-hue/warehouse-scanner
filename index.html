@@ -55,7 +55,7 @@ width: 100%;
 background: #10b981;																									
 color: white;																									
 border: none;																									
-padding: 22px; /* 高さを出して大きく変更 */																									
+padding: 22px;																									
 border-radius: 10px;																									
 font-size: 19px;																									
 font-weight: bold;																									
@@ -90,19 +90,11 @@ color: #334155;
 .status.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }																									
 .status.error { background: #fee2e2; color: #dc2626; font-size: 16px; border: 1px solid #fecaca; }																									
 																									
-/* 進捗リストのスタイル */																									
-.product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid #e2e8f0; font-weight: bold; }																									
-.product-item.white { background: #ffffff; color: #1e293b; }																									
-.product-item.gray { background: #e2e8f0; color: #64748b; text-decoration: line-through; opacity: 0.8; }																									
-.badge-status { padding: 4px 10px; border-radius: 6px; font-size: 12px; }																									
-.badge-status.white { background: #dbeafe; color: #1d4ed8; }																									
-.badge-status.gray { background: #cbd5e1; color: #475569; }																									
-																									
 .store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
 .store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
 .store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
 																									
-/* カメラとL字型スキャナー風ガイド枠のレイアウト */																									
+/* カメラとL字型スキャナー風ガイド枠・ズーム/フォーカス用レイアウト */																									
 .scanner-wrapper {																									
 position: relative;																									
 width: 100%;																									
@@ -113,6 +105,7 @@ overflow: hidden;
 display: flex;																									
 justify-content: center;																									
 align-items: center;																									
+cursor: pointer;																									
 }																									
 video {																									
 width: 100% !important;																									
@@ -122,6 +115,46 @@ object-fit: cover;
 display: block;																									
 position: relative;																									
 z-index: 1;																									
+transform-origin: center center;																									
+transition: transform 0.1s ease-out;																									
+}																									
+																									
+/* ズームコントロールボタン用のバー */																									
+.camera-controls {																									
+display: flex;																									
+gap: 8px;																									
+margin-top: 8px;																									
+}																									
+.btn-zoom {																									
+flex: 1;																									
+background: #334155;																									
+color: white;																									
+border: none;																									
+padding: 10px;																									
+border-radius: 8px;																									
+font-size: 14px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+}																									
+.btn-zoom.active {																									
+background: #2563eb;																									
+}																									
+																									
+/* タップ時フォーカスリングアニメーション */																									
+.focus-ring {																									
+position: absolute;																									
+width: 60px;																									
+height: 60px;																									
+border: 2px solid #fbbf24;																									
+border-radius: 50%;																									
+transform: translate(-50%, -50%);																									
+pointer-events: none;																									
+z-index: 25;																									
+animation: focusAnim 0.5s ease-out forwards;																									
+}																									
+@keyframes focusAnim {																									
+0% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }																									
+100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }																									
 }																									
 																									
 /* ガイド枠 */																									
@@ -193,10 +226,10 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <!-- カメラ起動時に表示されるコンテナ -->																									
 <div class="card" id="videoCard" style="display:none;">																									
 <div id="videoContainer">																									
-<div class="scanner-wrapper">																									
+<div class="scanner-wrapper" id="scannerWrapper" onclick="handleVideoTap(event)">																									
 <video id="video" autoplay playsinline muted></video>																									
 <div class="scan-guide-box">																									
-<div class="scan-guide-text">枠内にバーコードを合わせてください</div>																									
+<div class="scan-guide-text">枠内にバーコードを合わせてください (タップで再フォーカス)</div>																									
 <div class="scan-laser"></div>																									
 <div class="corner corner-tl"></div>																									
 <div class="corner corner-tr"></div>																									
@@ -204,16 +237,20 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <div class="corner corner-br"></div>																									
 </div>																									
 </div>																									
+<!-- ズーム調整ボタン -->																									
+<div class="camera-controls">																									
+<button type="button" id="zoom1x" class="btn-zoom active" onclick="setZoom(1)">1.0x (標準)</button>																									
+<button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
+<button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
+</div>																									
 <button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセリスキャン</button>																									
 </div>																									
 </div>																									
 																									
-<!-- アプリを開いた時の最初の画面：商品の進捗一覧 -->																									
+<!-- アプリを開いた時の最初の画面：最初はホーム案内メッセージを表示（進捗一覧の読込は廃止） -->																									
 <div class="card" id="homeProgressCard">																									
-<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:10px; color:#2563eb;">📋 ピッキング進捗一覧</div>																									
-<div id="progressListContainer">																									
-<div style="text-align:center; color:#64748b; padding:10px;">データを読み込み中...</div>																									
-</div>																									
+<div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
+<div style="color:#64748b; font-size:14px; line-height:1.5;">下の「スキャン開始」ボタンを押して、最初に出荷する商品をスキャンしてください。</div>																									
 </div>																									
 																									
 <!-- 個別商品のピッキング詳細画面 -->																									
@@ -244,64 +281,17 @@ let activeStoreCode = null;
 let storeCounts = {};																									
 let isProcessing = false;																									
 let audioCtx = null;																									
+let currentZoom = 1.0;																									
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
 window.onload = function() {																									
-loadProgressList();																									
+// アプリ起動時のデータ読み込みは完全に排除しました																									
 };																									
-																									
-function loadProgressList() {																									
-const callbackName = 'cb_progress_' + Date.now();																									
-window[callbackName] = function(res) {																									
-delete window[callbackName];																									
-const scriptEl = document.getElementById(callbackName);																									
-if (scriptEl) scriptEl.remove();																									
-																									
-if (res.success) {																									
-renderProgressList(res.products);																									
-} else {																									
-document.getElementById('progressListContainer').innerHTML = `<div style="color:red; text-align:center;">${res.error}</div>`;																									
-}																									
-};																									
-																									
-const script = document.createElement('script');																									
-script.id = callbackName;																									
-script.src = `${GAS_URL}?action=getProgressList&callback=${callbackName}&_t=${Date.now()}`;																									
-script.onerror = function() {																									
-document.getElementById('progressListContainer').innerHTML = `<div style="color:red; text-align:center;">通信エラー: 進捗リストを読み込めませんでした</div>`;																									
-};																									
-document.body.appendChild(script);																									
-}																									
-																									
-function renderProgressList(products) {																									
-const container = document.getElementById('progressListContainer');																									
-container.innerHTML = '';																									
-																									
-if (!products || products.length === 0) {																									
-container.innerHTML = '<div style="text-align:center; color:#64748b;">データがありません</div>';																									
-return;																									
-}																									
-																									
-products.forEach(p => {																									
-const div = document.createElement('div');																									
-const statusClass = p.isCompleted ? 'gray' : 'white';																									
-const badgeText = p.isCompleted ? '完了' : '未完了';																									
-																									
-div.className = `product-item ${statusClass}`;																									
-div.innerHTML = `																									
-<div>型番/バーコード: ${p.itemCode}</div>																									
-<div class="badge-status ${statusClass}">${badgeText}</div>																									
-`;																									
-container.appendChild(div);																									
-});																									
-}																									
 																									
 function switchMode(mode) {																									
 currentMode = mode;																									
 }																									
-																									
-function onSortCodeChange() {}																									
 																									
 function onSortChange() {																									
 if (currentData) {																									
@@ -320,6 +310,7 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 document.getElementById('videoCard').style.display = 'block';																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
+setZoom(1.0);																									
 																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
 if (result && !isProcessing) {																									
@@ -367,6 +358,48 @@ document.getElementById('homeProgressCard').style.display = 'block';
 isProcessing = false;																									
 }																									
 																									
+/* ズーム設定関数 */																									
+function setZoom(level) {																									
+currentZoom = level;																									
+const videoEl = document.getElementById('video');																									
+videoEl.style.transform = `scale(${currentZoom})`;																									
+																									
+document.getElementById('zoom1x').className = level === 1.0 ? 'btn-zoom active' : 'btn-zoom';																									
+document.getElementById('zoom15x').className = level === 1.5 ? 'btn-zoom active' : 'btn-zoom';																									
+document.getElementById('zoom2x').className = level === 2.0 ? 'btn-zoom active' : 'btn-zoom';																									
+}																									
+																									
+/* タップ時オートフォーカス再取得 & フォーカスリング表示 */																									
+function handleVideoTap(event) {																									
+const wrapper = document.getElementById('scannerWrapper');																									
+const rect = wrapper.getBoundingClientRect();																									
+const x = event.clientX - rect.left;																									
+const y = event.clientY - rect.top;																									
+																									
+const ring = document.createElement('div');																									
+ring.className = 'focus-ring';																									
+ring.style.left = `${x}px`;																									
+ring.style.top = `${y}px`;																									
+wrapper.appendChild(ring);																									
+setTimeout(() => ring.remove(), 500);																									
+																									
+try {																									
+const videoEl = document.getElementById('video');																									
+if (videoEl && videoEl.srcObject) {																									
+const track = videoEl.srcObject.getVideoTracks()[0];																									
+if (track && track.applyConstraints) {																									
+track.applyConstraints({																									
+advanced: [{ focusMode: 'single-shot' }]																									
+}).catch(() => {																									
+track.applyConstraints({																									
+advanced: [{ focusMode: 'continuous' }]																									
+}).catch(() => {});																									
+});																									
+}																									
+}																									
+} catch (e) {}																									
+}																									
+																									
 function handleScan(code) {																									
 if (currentMode === 'OUT_ITEM') {																									
 stopScan();																									
@@ -402,7 +435,7 @@ if (data.success) {
 playSuccessBeep();																									
 currentData = data;																									
 storeCounts = {};																									
-data.stores.forEach(s => storeCounts[s.storeCode] = s.completedQty || 0);																									
+data.stores.forEach(s => storeCounts[s.storeCode] = 0); // アプリ側でゼロからカウント開始（スプレッドシートへの途中更新は行わない）																									
 																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
@@ -482,17 +515,13 @@ updateStoreUI();
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
-sendStoreCompletionToGAS(currentData.barcode, activeStoreCode, count);																									
-																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
+																									
+																									
 if (isAllCompleted) {																									
-alert(`🎉 この商品の全店舗へのピッキングが完了しました！`);																									
-currentData = null;																									
-document.getElementById('outArea').style.display = 'none';																									
-document.getElementById('homeProgressCard').style.display = 'block';																									
-switchMode('OUT_ITEM');																									
-loadProgressList();																									
-showStatus('全店舗の出荷完了！', 'success');																									
+// 【重要】ひとつの商品が全店舗に配り終わったタイミングで、全店舗分のデータをまとめてGASへ一括送信する																									
+showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
+sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0);																									
 } else {																									
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
@@ -503,16 +532,63 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-function sendStoreCompletionToGAS(barcode, storeCode, qty) {																									
-const callbackName = 'cb_store_' + Date.now();																									
-window[callbackName] = function(res) {																									
-delete window[callbackName];																									
+/* ひとつの商品の全店舗ピッキング完了時に、全データをまとめて送信する関数（自動リトライ付き） */																									
+function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0) {																									
+const maxRetries = 5; // リトライ回数を強化																									
+const callbackName = 'cb_batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);																									
+																									
+// 送信用データを構築（例: storeCode1:qty1,storeCode2:qty2...）																									
+const countsObj = {};																									
+stores.forEach(s => {																									
+countsObj[s.storeCode] = counts[s.storeCode] || s.qty;																									
+});																									
+																									
+const timer = setTimeout(() => {																									
+cleanup();																									
+if (retryCount < maxRetries) {																									
+setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
+} else {																									
+triggerError('❌ 一括保存がタイムアウトしました。電波状況を確認してください。');																									
+}																									
+}, 12000); // タイムアウトを12秒に延長																									
+																									
+function cleanup() {																									
+clearTimeout(timer);																									
+if (window[callbackName]) delete window[callbackName];																									
 const oldScript = document.getElementById(callbackName);																									
 if (oldScript) oldScript.remove();																									
+}																									
+																									
+window[callbackName] = function(res) {																									
+cleanup();																									
+if (res && res.success) {																									
+alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
+currentData = null;																									
+document.getElementById('outArea').style.display = 'none';																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
+switchMode('OUT_ITEM');																									
+showStatus('全店舗の出荷完了・保存成功！', 'success');																									
+} else {																									
+if (retryCount < maxRetries) {																									
+setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
+} else {																									
+triggerError('❌ 保存に失敗しました。ネットワークを確認してください。');																									
+}																									
+}																									
 };																									
+																									
 const script = document.createElement('script');																									
 script.id = callbackName;																									
-script.src = `${GAS_URL}?action=recordCount&barcode=${encodeURIComponent(barcode)}&storeCode=${encodeURIComponent(storeCode)}&count=${qty}&callback=${callbackName}&_t=${Date.now()}`;																									
+// まとめて送信用のアクションパラメータ（recordBatch）を使用																									
+script.src = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&callback=${callbackName}&_t=${Date.now()}`;																									
+script.onerror = function() {																									
+cleanup();																									
+if (retryCount < maxRetries) {																									
+setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
+} else {																									
+triggerError('❌ 通信エラーにより保存できませんでした。');																									
+}																									
+};																									
 document.body.appendChild(script);																									
 }																									
 																									
@@ -522,9 +598,8 @@ document.getElementById('homeProgressCard').style.display = 'block';
 document.getElementById('outArea').style.display = 'none';																									
 currentData = null;																									
 switchMode('OUT_ITEM');																									
-loadProgressList();																									
 setTimeout(() => {																									
-showStatus('データ同期が完了しました', 'success');																									
+showStatus('同期完了しました', 'success');																									
 }, 500);																									
 }																									
 																									
