@@ -239,7 +239,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 <!-- ズーム調整ボタン -->																									
 <div class="camera-controls">																									
-<button type="button" id="zoom1x" class="btn-zoom active" onclick="setZoom(1)">1.0x (標準)</button>																									
+<button type="button" id="zoom1x" class="btn-zoom active" onclick="setZoom(1.0)">1.0x (標準)</button>																									
 <button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
 <button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
 </div>																									
@@ -247,7 +247,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </div>																									
 </div>																									
 																									
-<!-- アプリを開いた時の最初の画面：最初はホーム案内メッセージを表示（進捗一覧の読込は廃止） -->																									
+<!-- アプリを開いた時の最初の画面 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
 <div style="color:#64748b; font-size:14px; line-height:1.5;">下の「スキャン開始」ボタンを押して、最初に出荷する商品をスキャンしてください。</div>																									
@@ -286,7 +286,11 @@ let currentZoom = 1.0;
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
 window.onload = function() {																									
-// アプリ起動時のデータ読み込みは完全に排除しました																									
+// 保存されているズーム倍率があれば復元、なければ1.0																									
+const savedZoom = localStorage.getItem('picking_camera_zoom');																									
+if (savedZoom) {																									
+currentZoom = parseFloat(savedZoom);																									
+}																									
 };																									
 																									
 function switchMode(mode) {																									
@@ -310,7 +314,9 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 document.getElementById('videoCard').style.display = 'block';																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
-setZoom(1.0);																									
+																									
+// 保存されているズーム倍率を適用して起動																									
+setZoom(currentZoom);																									
 																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
 if (result && !isProcessing) {																									
@@ -358,9 +364,11 @@ document.getElementById('homeProgressCard').style.display = 'block';
 isProcessing = false;																									
 }																									
 																									
-/* ズーム設定関数 */																									
+/* ズーム設定関数（設定値をローカルストレージに保存して次回も維持） */																									
 function setZoom(level) {																									
 currentZoom = level;																									
+localStorage.setItem('picking_camera_zoom', currentZoom);																									
+																									
 const videoEl = document.getElementById('video');																									
 videoEl.style.transform = `scale(${currentZoom})`;																									
 																									
@@ -435,7 +443,7 @@ if (data.success) {
 playSuccessBeep();																									
 currentData = data;																									
 storeCounts = {};																									
-data.stores.forEach(s => storeCounts[s.storeCode] = 0); // アプリ側でゼロからカウント開始（スプレッドシートへの途中更新は行わない）																									
+data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
@@ -517,9 +525,7 @@ stopScan();
 if (count >= targetStore.qty) {																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
 																									
-																									
 if (isAllCompleted) {																									
-// 【重要】ひとつの商品が全店舗に配り終わったタイミングで、全店舗分のデータをまとめてGASへ一括送信する																									
 showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
 sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0);																									
 } else {																									
@@ -532,12 +538,10 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-/* ひとつの商品の全店舗ピッキング完了時に、全データをまとめて送信する関数（自動リトライ付き） */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0) {																									
-const maxRetries = 5; // リトライ回数を強化																									
+const maxRetries = 5;																									
 const callbackName = 'cb_batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);																									
 																									
-// 送信用データを構築（例: storeCode1:qty1,storeCode2:qty2...）																									
 const countsObj = {};																									
 stores.forEach(s => {																									
 countsObj[s.storeCode] = counts[s.storeCode] || s.qty;																									
@@ -550,7 +554,7 @@ setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 
 } else {																									
 triggerError('❌ 一括保存がタイムアウトしました。電波状況を確認してください。');																									
 }																									
-}, 12000); // タイムアウトを12秒に延長																									
+}, 12000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
@@ -579,7 +583,6 @@ triggerError('❌ 保存に失敗しました。ネットワークを確認し�
 																									
 const script = document.createElement('script');																									
 script.id = callbackName;																									
-// まとめて送信用のアクションパラメータ（recordBatch）を使用																									
 script.src = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&callback=${callbackName}&_t=${Date.now()}`;																									
 script.onerror = function() {																									
 cleanup();																									
@@ -682,7 +685,7 @@ div.id = `card-${store.storeCode}`;
 div.innerHTML = `																									
 <div style="display: flex; align-items: center; gap: 12px;">																									
 <div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
-<div style="font-size: 10px; font-weight: normal;">箱No.</div>																									
+<div style="font-size: 10px; font-weight: normal;">Box No.</div>																									
 ${store.storeNo}																									
 </div>																									
 <div style="flex-grow: 1;">																									
