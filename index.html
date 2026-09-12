@@ -416,26 +416,19 @@ countNeedItemScan(code);
 }																									
 }																									
 																									
+/* fetch() を使った超高速・確実なデータ取得 (タイムアウト30秒) */																									
 function fetchProductData(barcode) {																									
 showStatus('スキャン成功！出荷データ入力シートから読み込み中...', 'success');																									
 const isReverse = document.getElementById('sortOrder').value;																									
-const callbackName = 'cb_' + Date.now();																									
+const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`;																									
 																									
-// タイムアウトを10秒から30秒に延長																									
-const timer = setTimeout(() => {																									
-cleanup();																									
-triggerError('通信タイムアウト');																									
-}, 30000);																									
+const controller = new AbortController();																									
+const timer = setTimeout(() => controller.abort(), 30000);																									
 																									
-function cleanup() {																									
+fetch(url, { signal: controller.signal, mode: 'cors' })																									
+.then(response => response.json())																									
+.then(data => {																									
 clearTimeout(timer);																									
-if (window[callbackName]) delete window[callbackName];																									
-const oldScript = document.getElementById(callbackName);																									
-if (oldScript) oldScript.remove();																									
-}																									
-																									
-window[callbackName] = function(data) {																									
-cleanup();																									
 if (data.success) {																									
 playSuccessBeep();																									
 currentData = data;																									
@@ -457,16 +450,11 @@ showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${next
 } else {																									
 triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(未登録の商品です)`);																									
 }																									
-};																									
-																									
-const script = document.createElement('script');																									
-script.id = callbackName;																									
-script.src = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}&callback=${callbackName}`;																									
-script.onerror = function() {																									
-cleanup();																									
-triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(通信エラー)`);																									
-};																									
-document.body.appendChild(script);																									
+})																									
+.catch(error => {																									
+clearTimeout(timer);																									
+triggerError(`❌ 通信エラーまたはタイムアウトが発生しました`);																									
+});																									
 }																									
 																									
 function getNextRequiredStore() {																									
@@ -535,33 +523,23 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
+/* fetch() を使った一括保存処理（自動リトライ付き） */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0) {																									
 const maxRetries = 5;																									
-const callbackName = 'cb_batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);																									
-																									
 const countsObj = {};																									
 stores.forEach(s => {																									
 countsObj[s.storeCode] = counts[s.storeCode] || s.qty;																									
 });																									
 																									
-const timer = setTimeout(() => {																									
-cleanup();																									
-if (retryCount < maxRetries) {																									
-setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
-} else {																									
-triggerError('❌ 一括保存がタイムアウトしました。電波状況を確認してください。');																									
-}																									
-}, 12000);																									
+const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
 																									
-function cleanup() {																									
+const controller = new AbortController();																									
+const timer = setTimeout(() => controller.abort(), 12000);																									
+																									
+fetch(url, { signal: controller.signal, mode: 'cors' })																									
+.then(response => response.json())																									
+.then(res => {																									
 clearTimeout(timer);																									
-if (window[callbackName]) delete window[callbackName];																									
-const oldScript = document.getElementById(callbackName);																									
-if (oldScript) oldScript.remove();																									
-}																									
-																									
-window[callbackName] = function(res) {																									
-cleanup();																									
 if (res && res.success) {																									
 alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
 currentData = null;																									
@@ -576,20 +554,15 @@ setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 
 triggerError('❌ 保存に失敗しました。ネットワークを確認してください。');																									
 }																									
 }																									
-};																									
-																									
-const script = document.createElement('script');																									
-script.id = callbackName;																									
-script.src = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&callback=${callbackName}&_t=${Date.now()}`;																									
-script.onerror = function() {																									
-cleanup();																									
+})																									
+.catch(error => {																									
+clearTimeout(timer);																									
 if (retryCount < maxRetries) {																									
 setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
 } else {																									
 triggerError('❌ 通信エラーにより保存できませんでした。');																									
 }																									
-};																									
-document.body.appendChild(script);																									
+});																									
 }																									
 																									
 function syncData() {																									
@@ -719,13 +692,6 @@ card.className = 'store-card';
 }																									
 });																									
 }																									
-																									
-(function showStatus(msg, type) {																									
-const el = document.getElementById('status');																									
-el.innerText = msg;																									
-el.className = `status ${type}`;																									
-el.style.display = 'block';																									
-})(/*初回実行抑止*/);																									
 																									
 function showStatus(msg, type) {																									
 const el = document.getElementById('status');																									
