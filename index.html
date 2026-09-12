@@ -286,7 +286,6 @@ let currentZoom = 1.0;
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
 window.onload = function() {																									
-// 保存されているズーム倍率があれば復元、なければ1.0																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) {																									
 currentZoom = parseFloat(savedZoom);																									
@@ -315,7 +314,6 @@ document.getElementById('videoCard').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
 																									
-// 保存されているズーム倍率を適用して起動																									
 setZoom(currentZoom);																									
 																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
@@ -364,7 +362,6 @@ document.getElementById('homeProgressCard').style.display = 'block';
 isProcessing = false;																									
 }																									
 																									
-/* ズーム設定関数（設定値をローカルストレージに保存して次回も維持） */																									
 function setZoom(level) {																									
 currentZoom = level;																									
 localStorage.setItem('picking_camera_zoom', currentZoom);																									
@@ -377,7 +374,6 @@ document.getElementById('zoom15x').className = level === 1.5 ? 'btn-zoom active'
 document.getElementById('zoom2x').className = level === 2.0 ? 'btn-zoom active' : 'btn-zoom';																									
 }																									
 																									
-/* タップ時オートフォーカス再取得 & フォーカスリング表示 */																									
 function handleVideoTap(event) {																									
 const wrapper = document.getElementById('scannerWrapper');																									
 const rect = wrapper.getBoundingClientRect();																									
@@ -425,10 +421,11 @@ showStatus('スキャン成功！出荷データ入力シートから読み込�
 const isReverse = document.getElementById('sortOrder').value;																									
 const callbackName = 'cb_' + Date.now();																									
 																									
+// タイムアウトを10秒から30秒に延長																									
 const timer = setTimeout(() => {																									
 cleanup();																									
 triggerError('通信タイムアウト');																									
-}, 10000);																									
+}, 30000);																									
 																									
 function cleanup() {																									
 clearTimeout(timer);																									
@@ -722,6 +719,13 @@ card.className = 'store-card';
 }																									
 });																									
 }																									
+																									
+(function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
+})(/*初回実行抑止*/);																									
 																									
 function showStatus(msg, type) {																									
 const el = document.getElementById('status');																									
