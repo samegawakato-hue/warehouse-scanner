@@ -15,7 +15,7 @@ padding-bottom: 200px;
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 																									
-/* 画面右上の同期ボタン固定用ヘッダー */																									
+/* 画面右上の反映・更新ボタン固定用ヘッダー */																									
 .top-right-header {																									
 position: fixed;																									
 top: 10px;																									
@@ -215,9 +215,9 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- 画面右上のデータ同期・更新ボタン -->																									
+<!-- 画面右上の反映・更新ボタンに変更 -->																									
 <div class="top-right-header">																									
-<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 同期・更新</button>																									
+<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映・更新</button>																									
 </div>																									
 																									
 <!-- 常時見えるステータス表示エリア -->																									
@@ -285,10 +285,38 @@ let currentZoom = 1.0;
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
+// 起動時のチェックと自動同期（ローカルストレージの復元および未送信データの自動反映）																									
 window.onload = function() {																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) {																									
 currentZoom = parseFloat(savedZoom);																									
+}																									
+																									
+// ローカルストレージから中断データを復元チェック																									
+const savedData = localStorage.getItem('picking_current_data');																									
+const savedCounts = localStorage.getItem('picking_store_counts');																									
+																									
+if (savedData && savedCounts) {																									
+try {																									
+currentData = JSON.parse(savedData);																									
+storeCounts = JSON.parse(savedCounts);																									
+																									
+// 全店舗完了していて未送信だった場合は自動でスプレッドシートへ反映を試みる																									
+const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
+if (isAllCompleted) {																									
+showStatus('未送信の完了データを検出。スプレッドシートへ自動反映中...', 'success');																									
+sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, true);																									
+} else {																									
+// 途中の状態であれば画面を復元																									
+document.getElementById('homeProgressCard').style.display = 'none';																									
+renderProductData(currentData);																									
+switchMode('OUT_STORE');																									
+showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
+}																									
+} catch (e) {																									
+localStorage.removeItem('picking_current_data');																									
+localStorage.removeItem('picking_store_counts');																									
+}																									
 }																									
 };																									
 																									
@@ -435,6 +463,10 @@ currentData = data;
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
+// ローカルストレージに作業データを保存																									
+localStorage.setItem('picking_current_data', JSON.stringify(currentData));																									
+localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
+																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
@@ -504,6 +536,9 @@ const targetStore = currentData.stores.find(s => String(s.storeCode) === String(
 storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
 																									
+// カウント変動ごとにローカルストレージへ自動保存																									
+localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
+																									
 updateStoreUI();																									
 stopScan();																									
 																									
@@ -512,7 +547,7 @@ const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] |
 																									
 if (isAllCompleted) {																									
 showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
-sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0);																									
+sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, false);																									
 } else {																									
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
@@ -524,7 +559,7 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 																									
 /* fetch() を使った一括保存処理（自動リトライ付き） */																									
-function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0) {																									
+function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
 const maxRetries = 5;																									
 const countsObj = {};																									
 stores.forEach(s => {																									
@@ -541,7 +576,16 @@ fetch(url, { signal: controller.signal, mode: 'cors' })
 .then(res => {																									
 clearTimeout(timer);																									
 if (res && res.success) {																									
+// 送信成功したらローカルストレージの作業データをクリア																									
+localStorage.removeItem('picking_current_data');																									
+localStorage.removeItem('picking_store_counts');																									
+																									
+if (!isAutoSync) {																									
 alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
+} else {																									
+showStatus('未送信データをスプレッドシートへ自動反映しました！', 'success');																									
+}																									
+																									
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
@@ -549,7 +593,7 @@ switchMode('OUT_ITEM');
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
 } else {																									
 if (retryCount < maxRetries) {																									
-setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
+setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
 triggerError('❌ 保存に失敗しました。ネットワークを確認してください。');																									
 }																									
@@ -558,21 +602,37 @@ triggerError('❌ 保存に失敗しました。ネットワークを確認し�
 .catch(error => {																									
 clearTimeout(timer);																									
 if (retryCount < maxRetries) {																									
-setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1), 1500 * (retryCount + 1));																									
+setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
 triggerError('❌ 通信エラーにより保存できませんでした。');																									
 }																									
 });																									
 }																									
 																									
+/* 「反映・更新」ボタンを押した時の処理 */																									
 function syncData() {																									
-showStatus('最新状態を同期中...', 'success');																									
+showStatus('スプレッドシートへデータを反映中...', 'success');																									
+																									
+const savedData = localStorage.getItem('picking_current_data');																									
+const savedCounts = localStorage.getItem('picking_store_counts');																									
+																									
+if (savedData && savedCounts) {																									
+try {																									
+const data = JSON.parse(savedData);																									
+const counts = JSON.parse(savedCounts);																									
+// 未送信データがあれば手動で反映を実行																									
+sendBatchCompletionToGAS(data.barcode, data.stores, counts, 0, false);																									
+return;																									
+} catch (e) {}																									
+}																									
+																									
+// 未送信データがない場合は画面をホームにリセット																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
 document.getElementById('outArea').style.display = 'none';																									
 currentData = null;																									
 switchMode('OUT_ITEM');																									
 setTimeout(() => {																									
-showStatus('同期完了しました', 'success');																									
+showStatus('最新状態に更新しました（未送信データなし）', 'success');																									
 }, 500);																									
 }																									
 																									
