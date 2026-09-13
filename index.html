@@ -215,7 +215,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
-<!-- 画面右上の反映・更新ボタンに変更 -->																									
+<!-- 画面右上の反映・更新ボタン -->																									
 <div class="top-right-header">																									
 <button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映・更新</button>																									
 </div>																									
@@ -285,14 +285,13 @@ let currentZoom = 1.0;
 																									
 document.getElementById('scanBtn').addEventListener('click', startScan);																									
 																									
-// 起動時のチェックと自動同期（ローカルストレージの復元および未送信データの自動反映）																									
+// 起動時のチェックと自動同期																									
 window.onload = function() {																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) {																									
 currentZoom = parseFloat(savedZoom);																									
 }																									
 																									
-// ローカルストレージから中断データを復元チェック																									
 const savedData = localStorage.getItem('picking_current_data');																									
 const savedCounts = localStorage.getItem('picking_store_counts');																									
 																									
@@ -301,13 +300,11 @@ try {
 currentData = JSON.parse(savedData);																									
 storeCounts = JSON.parse(savedCounts);																									
 																									
-// 全店舗完了していて未送信だった場合は自動でスプレッドシートへ反映を試みる																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
 if (isAllCompleted) {																									
 showStatus('未送信の完了データを検出。スプレッドシートへ自動反映中...', 'success');																									
 sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, true);																									
 } else {																									
-// 途中の状態であれば画面を復元																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(currentData);																									
 switchMode('OUT_STORE');																									
@@ -444,7 +441,6 @@ countNeedItemScan(code);
 }																									
 }																									
 																									
-/* fetch() を使った超高速・確実なデータ取得 (タイムアウト30秒) */																									
 function fetchProductData(barcode) {																									
 showStatus('スキャン成功！出荷データ入力シートから読み込み中...', 'success');																									
 const isReverse = document.getElementById('sortOrder').value;																									
@@ -463,7 +459,6 @@ currentData = data;
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
-// ローカルストレージに作業データを保存																									
 localStorage.setItem('picking_current_data', JSON.stringify(currentData));																									
 localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 																									
@@ -536,7 +531,6 @@ const targetStore = currentData.stores.find(s => String(s.storeCode) === String(
 storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
 																									
-// カウント変動ごとにローカルストレージへ自動保存																									
 localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 																									
 updateStoreUI();																									
@@ -558,12 +552,13 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-/* fetch() を使った一括保存処理（自動リトライ付き） */																									
+/* 修正：途中の店舗はカウント数（未完了なら0や途中数）のみを送り、全店舗完了時のみグレーアウトさせる */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
 const maxRetries = 5;																									
 const countsObj = {};																									
 stores.forEach(s => {																									
-countsObj[s.storeCode] = counts[s.storeCode] || s.qty;																									
+// 実際に配った数を送信（未完了の店舗は現状のカウント数をそのまま送る）																									
+countsObj[s.storeCode] = counts[s.storeCode] || 0;																									
 });																									
 																									
 const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
@@ -576,26 +571,28 @@ fetch(url, { signal: controller.signal, mode: 'cors' })
 .then(res => {																									
 clearTimeout(timer);																									
 if (res && res.success) {																									
-// 送信成功したらローカルストレージの作業データをクリア																									
+const isAllCompleted = stores.every(s => (counts[s.storeCode] || 0) >= s.qty);																									
+																									
+if (isAllCompleted) {																									
 localStorage.removeItem('picking_current_data');																									
 localStorage.removeItem('picking_store_counts');																									
-																									
-if (!isAutoSync) {																									
-alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
-} else {																									
-showStatus('未送信データをスプレッドシートへ自動反映しました！', 'success');																									
-}																									
-																									
 currentData = null;																									
 document.getElementById('outArea').style.display = 'none';																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
 switchMode('OUT_ITEM');																									
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
 } else {																									
+showStatus('現在の作業状態をスプレッドシートへ反映しました（途中経過）', 'success');																									
+}																									
+																									
+if (!isAutoSync && isAllCompleted) {																									
+alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
+}																									
+} else {																									
 if (retryCount < maxRetries) {																									
 setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
-triggerError('❌ 保存に失敗しました。ネットワークを確認してください。');																									
+triggerError('❌ 反映に失敗しました。ネットワークを確認してください。');																									
 }																									
 }																									
 })																									
@@ -604,7 +601,7 @@ clearTimeout(timer);
 if (retryCount < maxRetries) {																									
 setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
-triggerError('❌ 通信エラーにより保存できませんでした。');																									
+triggerError('❌ 通信エラーにより反映できませんでした。');																									
 }																									
 });																									
 }																									
@@ -620,7 +617,7 @@ if (savedData && savedCounts) {
 try {																									
 const data = JSON.parse(savedData);																									
 const counts = JSON.parse(savedCounts);																									
-// 未送信データがあれば手動で反映を実行																									
+// 途中のカウント状態をそのまま送信してスプレッドシートに反映																									
 sendBatchCompletionToGAS(data.barcode, data.stores, counts, 0, false);																									
 return;																									
 } catch (e) {}																									
