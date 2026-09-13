@@ -552,14 +552,24 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-/* 修正：完全にスマホで実際にカウントした数（未完了なら明確にその数値、していなければ0）だけを送る */																									
+/* 修正：スマホ側で実際に1個以上スキャンしてカウントされた店舗のデータだけを抽出して送信する */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
 const maxRetries = 5;																									
 const countsObj = {};																									
+																									
+// ★変更点：実際にカウント数が「1以上」ある店舗だけを送信対象にする																									
 stores.forEach(s => {																									
-// すでに数えた分があればその数、なければ厳密に 0 を入れる（勝手に目標数を入れない）																									
-countsObj[s.storeCode] = Number(counts[s.storeCode]) || 0;																									
+const cnt = Number(counts[s.storeCode]) || 0;																									
+if (cnt > 0) {																									
+countsObj[s.storeCode] = cnt;																									
+}																									
 });																									
+																									
+// もし1つもスキャン・カウントしていない場合は送信しない																									
+if (Object.keys(countsObj).length === 0) {																									
+showStatus('送信するスキャンデータがありません', 'success');																									
+return;																									
+}																									
 																									
 const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
 																									
@@ -582,7 +592,7 @@ document.getElementById('homeProgressCard').style.display = 'block';
 switchMode('OUT_ITEM');																									
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
 } else {																									
-showStatus('現在の途中経過をスプレッドシートへ反映しました', 'success');																									
+showStatus('スキャンした店舗の途中経過をスプレッドシートへ反映しました', 'success');																									
 }																									
 																									
 if (!isAutoSync && isAllCompleted) {																									
