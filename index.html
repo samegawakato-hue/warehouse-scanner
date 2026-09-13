@@ -15,7 +15,13 @@ padding-bottom: 200px;
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 																									
-/* 画面右上の反映・更新ボタン固定用ヘッダー */																									
+/* 画面左上と右上のボタン固定用ヘッダー */																									
+.top-left-header {																									
+position: fixed;																									
+top: 10px;																									
+left: 12px;																									
+z-index: 1000;																									
+}																									
 .top-right-header {																									
 position: fixed;																									
 top: 10px;																									
@@ -24,6 +30,20 @@ z-index: 1000;
 }																									
 .btn-sync-top {																									
 background: #2563eb;																									
+color: white;																									
+border: none;																									
+padding: 8px 12px;																									
+border-radius: 8px;																									
+font-size: 13px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+box-shadow: 0 2px 5px rgba(0,0,0,0.2);																									
+display: flex;																									
+align-items: center;																									
+gap: 4px;																									
+}																									
+.btn-reset-top {																									
+background: #dc2626;																									
 color: white;																									
 border: none;																									
 padding: 8px 12px;																									
@@ -215,6 +235,11 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 </head>																									
 <body>																									
 																									
+<!-- 画面左上のアプリ側リセットボタン -->																									
+<div class="top-left-header">																									
+<button class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
+</div>																									
+																									
 <!-- 画面右上の反映・更新ボタン -->																									
 <div class="top-right-header">																									
 <button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映・更新</button>																									
@@ -250,7 +275,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <!-- アプリを開いた時の最初の画面 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b; font-size:14px; line-height:1.5;">下の「スキャン開始」ボタンを押して、最初に出荷する商品をスキャンしてください。</div>																									
+<div style="color:#64748b; font-size:14px; line-height:1.5;">下のキラキラした「スキャン開始」ボタンを押して、最初に出荷する商品をスキャンしてください。</div>																									
 </div>																									
 																									
 <!-- 個別商品のピッキング詳細画面 -->																									
@@ -552,12 +577,9 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-/* 修正：スマホ側で実際に1個以上スキャンしてカウントされた店舗のデータだけを抽出して送信する */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
 const maxRetries = 5;																									
 const countsObj = {};																									
-																									
-// ★変更点：実際にカウント数が「1以上」ある店舗だけを送信対象にする																									
 stores.forEach(s => {																									
 const cnt = Number(counts[s.storeCode]) || 0;																									
 if (cnt > 0) {																									
@@ -565,7 +587,6 @@ countsObj[s.storeCode] = cnt;
 }																									
 });																									
 																									
-// もし1つもスキャン・カウントしていない場合は送信しない																									
 if (Object.keys(countsObj).length === 0) {																									
 showStatus('送信するスキャンデータがありません', 'success');																									
 return;																									
@@ -614,6 +635,28 @@ setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 
 triggerError('❌ 通信エラーにより反映できませんでした。');																									
 }																									
 });																									
+}																									
+																									
+/* 画面左上の「リセット」ボタン：スプレッドシートに一切触れず、アプリ側のデータのみをクリアして最初に戻す */																									
+function resetAppDataLocally() {																									
+if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
+// ローカルストレージの作業データを削除																									
+localStorage.removeItem('picking_current_data');																									
+localStorage.removeItem('picking_store_counts');																									
+																									
+// 変数を初期化																									
+currentData = null;																									
+storeCounts = {};																									
+activeStoreCode = null;																									
+switchMode('OUT_ITEM');																									
+																									
+// 画面表示を最初のホーム画面に戻す																									
+document.getElementById('outArea').style.display = 'none';																									
+document.getElementById('videoCard').style.display = 'none';																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
+																									
+showStatus('アプリ側のデータをリセットしました', 'success');																									
+}																									
 }																									
 																									
 /* 「反映・更新」ボタンを押した時の処理 */																									
