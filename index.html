@@ -242,21 +242,9 @@ z-index: 11;
 .corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 4px; }																									
 																									
 input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
-																									
-/* ブルートゥーススキャナー常時待ち受け用の隠し入力欄（フォーカスを維持） */																									
-#hidInput {																									
-position: absolute;																									
-opacity: 0;																									
-pointer-events: none;																									
-width: 1px;																									
-height: 1px;																									
-}																									
 </style>																									
 </head>																									
 <body>																									
-																									
-<!-- Bluetoothスキャナーからの入力を常時受け取るための隠し入力 -->																									
-<input type="text" id="hidInput" autocomplete="off">																									
 																									
 <!-- 画面上部のリセットボタンと反映・更新ボタンを並べた配置エリア -->																									
 <div class="top-buttons-container">																									
@@ -360,8 +348,8 @@ localStorage.removeItem('picking_store_counts');
 }																									
 }																									
 																									
-// 常時Bluetoothスキャナーからの入力を受け取れるように隠しインプットにフォーカスを維持																									
-setupBluetoothScannerInput();																									
+// Bluetoothスキャナー待機を有効化																									
+setupBluetoothScannerListener();																									
 };																									
 																									
 function switchMode(mode) {																									
@@ -375,40 +363,46 @@ renderProductData(currentData);
 }																									
 }																									
 																									
-// --- Bluetoothスキャナー（HIDモード）用の設定 ---																									
-function setupBluetoothScannerInput() {																									
-const hidInput = document.getElementById('hidInput');																									
+// --- Bluetoothスキャナー（HID方式）用：画面にフォーカスやポップアップを出さない安全なキー監視 ---																									
+let scannerBuffer = '';																									
+let scannerTimer = null;																									
 																									
+function setupBluetoothScannerListener() {																									
+document.addEventListener('keydown', (e) => {																									
+// カメラ起動中やテキスト入力・セレクト操作中はスキャナー入力を無視																									
+if (document.getElementById('videoCard').style.display === 'block') return;																									
+if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;																									
 																									
-// 画面のどこをタップしても隠し入力にフォーカスが戻るようにする（スキャナー常時受付のため）																									
-document.addEventListener('click', (e) => {																									
-// ボタンやセレクトボックスなどの操作時は邪魔しない																									
-if (['BUTTON', 'SELECT', 'INPUT', 'OPTION'].includes(e.target.tagName)) return;																									
-if (document.getElementById('videoCard').style.display === 'block') return; // カメラ起動中は除く																									
-hidInput.focus();																									
-});																									
-																									
-hidInput.addEventListener('keydown', (e) => {																									
+// Enterキーが押されたらバーコード入力完了とみなす																									
 if (e.key === 'Enter') {																									
-const barcode = hidInput.value.trim();																									
-hidInput.value = ''; // クリア																									
-if (barcode) {																									
+if (scannerBuffer.trim().length > 0) {																									
+const barcode = scannerBuffer.trim();																									
+scannerBuffer = '';																									
+if (scannerTimer) clearTimeout(scannerTimer);																									
+																									
 if (!isProcessing) {																									
 isProcessing = true;																									
 handleScan(barcode);																									
 setTimeout(() => { isProcessing = false; }, 500);																									
 }																									
 }																									
+return;																									
+}																									
+																									
+// 通常の文字入力（Bluetoothスキャナーは高速で1文字ずつキー入力を送信してくるためバッファに溜める）																									
+if (e.key.length === 1) {																									
+scannerBuffer += e.key;																									
+																									
+// 途中で入力が途切れたらバッファをリセット（タイピングミスやゴミ入力対策）																									
+if (scannerTimer) clearTimeout(scannerTimer);																									
+scannerTimer = setTimeout(() => {																									
+scannerBuffer = '';																									
+}, 100); // 100ms以内に連続入力されるのがスキャナーの特徴																									
 }																									
 });																									
-																									
-// 初期フォーカス																									
-setTimeout(() => hidInput.focus(), 300);																									
 }																									
 																									
 function activateScannerMode() {																									
-const hidInput = document.getElementById('hidInput');																									
-hidInput.focus();																									
 playSuccessBeep();																									
 showStatus('📡 Bluetoothスキャナー待機中...\nスキャナーのトリガーを引いてバーコードを読み取ってください。', 'success');																									
 }																									
@@ -471,7 +465,6 @@ document.getElementById('outArea').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 }																									
 isProcessing = false;																									
-setTimeout(() => document.getElementById('hidInput').focus(), 200);																									
 }																									
 																									
 function setZoom(level) {																									
