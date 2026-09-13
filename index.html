@@ -552,13 +552,13 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-/* 修正：途中の店舗はカウント数（未完了なら0や途中数）のみを送り、全店舗完了時のみグレーアウトさせる */																									
+/* 修正：完全にスマホで実際にカウントした数（未完了なら明確にその数値、していなければ0）だけを送る */																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
 const maxRetries = 5;																									
 const countsObj = {};																									
 stores.forEach(s => {																									
-// 実際に配った数を送信（未完了の店舗は現状のカウント数をそのまま送る）																									
-countsObj[s.storeCode] = counts[s.storeCode] || 0;																									
+// すでに数えた分があればその数、なければ厳密に 0 を入れる（勝手に目標数を入れない）																									
+countsObj[s.storeCode] = Number(counts[s.storeCode]) || 0;																									
 });																									
 																									
 const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
@@ -571,7 +571,7 @@ fetch(url, { signal: controller.signal, mode: 'cors' })
 .then(res => {																									
 clearTimeout(timer);																									
 if (res && res.success) {																									
-const isAllCompleted = stores.every(s => (counts[s.storeCode] || 0) >= s.qty);																									
+const isAllCompleted = stores.every(s => (Number(counts[s.storeCode]) || 0) >= s.qty);																									
 																									
 if (isAllCompleted) {																									
 localStorage.removeItem('picking_current_data');																									
@@ -582,7 +582,7 @@ document.getElementById('homeProgressCard').style.display = 'block';
 switchMode('OUT_ITEM');																									
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
 } else {																									
-showStatus('現在の作業状態をスプレッドシートへ反映しました（途中経過）', 'success');																									
+showStatus('現在の途中経過をスプレッドシートへ反映しました', 'success');																									
 }																									
 																									
 if (!isAutoSync && isAllCompleted) {																									
@@ -617,13 +617,11 @@ if (savedData && savedCounts) {
 try {																									
 const data = JSON.parse(savedData);																									
 const counts = JSON.parse(savedCounts);																									
-// 途中のカウント状態をそのまま送信してスプレッドシートに反映																									
 sendBatchCompletionToGAS(data.barcode, data.stores, counts, 0, false);																									
 return;																									
 } catch (e) {}																									
 }																									
 																									
-// 未送信データがない場合は画面をホームにリセット																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
 document.getElementById('outArea').style.display = 'none';																									
 currentData = null;																									
