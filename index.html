@@ -240,11 +240,15 @@ z-index: 11;
 .corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 4px; }																									
 .corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 4px; }																									
 																									
-/* ハンディスキャナー入力用隠しフィールド */																									
+/* ハンディスキャナー入力用隠しフィールドを完全に画面外へ追いやる */																									
 #hiddenScannerInput {																									
-position: absolute;																									
+position: fixed;																									
+top: -100px;																									
+left: -100px;																									
+width: 1px;																									
+height: 1px;																									
 opacity: 0;																									
-pointer-events: none;																									
+z-index: -1;																									
 }																									
 </style>																									
 </head>																									
@@ -259,7 +263,7 @@ pointer-events: none;
 <!-- 常時見えるステータス表示エリア -->																									
 <div id="status" class="status" style="display:none;"></div>																									
 																									
-<!-- ハンディスキャナー用の隠し入力フィールド（常時フォーカス維持用） -->																									
+<!-- ハンディスキャナー用の隠し入力フィールド -->																									
 <input type="text" id="hiddenScannerInput" onkeydown="handleHiddenInputKeydown(event)">																									
 																									
 <!-- カメラ起動時に表示されるコンテナ -->																									
@@ -289,7 +293,7 @@ pointer-events: none;
 <!-- アプリを開いた時の最初の画面 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b; font-size:14px; line-height:1.5;">下のボタンからスキャン方法を選んでください。（ハンディスキャナーを使う場合は「スキャナー入力待受」をタップしてください）</div>																									
+<div style="color:#64748b; font-size:14px; line-height:1.5;">下のボタンからスキャン方法を選んでください。（ハンディスキャナーを使用する場合は「ハンディスキャナーを使う」をタップしてください）</div>																									
 </div>																									
 																									
 <!-- 個別商品のピッキング詳細画面 -->																									
@@ -349,7 +353,6 @@ document.getElementById('homeProgressCard').style.display = 'none';
 renderProductData(currentData);																									
 switchMode('OUT_STORE');																									
 showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
-// 復元時もハンディスキャナーが使えるように待受を有効化																									
 startHandyScannerMode();																									
 }																									
 } catch (e) {																									
@@ -370,30 +373,32 @@ renderProductData(currentData);
 }																									
 }																									
 																									
-/* --- ハンディスキャナーモード（外部機器用） --- */																									
+/* --- ハンディスキャナーモード --- */																									
 function startHandyScannerMode() {																									
 isHandyScannerActive = true;																									
 const inputEl = document.getElementById('hiddenScannerInput');																									
 inputEl.focus();																									
 																									
-// 画面タッチ時にも隠し入力にフォーカスを戻してスキャナー入力を取りこぼさないようにする																									
-document.body.onclick = function() {																									
+document.body.onclick = function(e) {																									
 if (isHandyScannerActive) {																									
+// ボタンやセレクトボックス等をクリックしたときはフォーカスを奪わないようにする																									
+if (e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION') {																									
+return;																									
+}																									
 const activeEl = document.activeElement;																									
-if (!activeEl || activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'SELECT') {																									
+if (!activeEl || activeEl.id !== 'hiddenScannerInput') {																									
 inputEl.focus();																									
 }																									
 }																									
 };																									
 																									
 showStatus('⚡ ハンディスキャナー待受中 (バーコードを読み取ってください)', 'success');																									
-document.getElementById('scannerModeBtn.active') // スタイル調整用																									
 }																									
 																									
 function handleHiddenInputKeydown(event) {																									
 if (event.key === 'Enter') {																									
 const code = event.target.value.trim();																									
-event.target.value = ''; // 入力をクリア																									
+event.target.value = ''; // 入力を即座にクリア																									
 if (code) {																									
 handleScan(code);																									
 }																									
@@ -402,6 +407,7 @@ handleScan(code);
 																									
 /* --- スマホカメラモード --- */																									
 function startCameraScan() {																									
+isHandyScannerActive = false; // カメラ使用時はスキャナー待受を一時オフ																									
 isProcessing = false;																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -458,6 +464,8 @@ document.getElementById('outArea').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 }																									
 isProcessing = false;																									
+// カメラキャンセル後はスキャナー待受に復帰																									
+startHandyScannerMode();																									
 }																									
 																									
 function setZoom(level) {																									
@@ -504,10 +512,8 @@ advanced: [{ focusMode: 'continuous' }]
 																									
 function handleScan(code) {																									
 if (currentMode === 'OUT_ITEM') {																									
-stopScan();																									
 fetchProductData(code);																									
 } else if (currentMode === 'OUT_STORE') {																									
-stopScan();																									
 verifyStoreScan(code);																									
 } else if (currentMode === 'OUT_NEED') {																									
 countNeedItemScan(code);																									
@@ -538,7 +544,6 @@ localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
-stopScan();																									
 																									
 const nextStore = getNextRequiredStore();																									
 if (!nextStore) {																									
@@ -547,13 +552,16 @@ switchMode('OUT_ITEM');
 } else {																									
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
+startHandyScannerMode();																									
 } else {																									
-triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(未登録の商品です)`);																									
+triggerError(`❌ 正しいバーコードを読み取ってください\n(未登録の商品です)`);																									
+startHandyScannerMode();																									
 }																									
 })																									
 .catch(error => {																									
 clearTimeout(timer);																									
 triggerError(`❌ 通信エラーまたはタイムアウトが発生しました`);																									
+startHandyScannerMode();																									
 });																									
 }																									
 																									
@@ -565,12 +573,14 @@ return currentData.stores.find(s => (storeCounts[s.storeCode] || 0) < s.qty);
 function verifyStoreScan(storeCode) {																									
 if (!currentData) {																									
 triggerError('先に「出荷商品」をスキャンしてください');																									
+startHandyScannerMode();																									
 return;																									
 }																									
 																									
 const nextRequiredStore = getNextRequiredStore();																									
 if (!nextRequiredStore) {																									
 triggerError('すべての店舗へのピッキングが完了しています');																									
+startHandyScannerMode();																									
 return;																									
 }																									
 																									
@@ -582,7 +592,8 @@ String(nextRequiredStore.storeName).trim()
 ].includes(scanned);																									
 																									
 if (!match) {																									
-triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
+triggerError(`❌ 正しいバーコードを読み取ってください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
+startHandyScannerMode();																									
 return;																									
 }																									
 																									
@@ -590,12 +601,13 @@ playSuccessBeep();
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
 showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 商品をスキャンしてください`, 'success');																									
+startHandyScannerMode();																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
-stopScan();																									
-triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
+triggerError(`❌ 正しいバーコードを読み取ってください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
+startHandyScannerMode();																									
 return;																									
 }																									
 																									
@@ -607,7 +619,6 @@ const count = storeCounts[activeStoreCode];
 localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 																									
 updateStoreUI();																									
-stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
 const isAllCompleted = currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty);																									
@@ -619,9 +630,11 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 switchMode('OUT_STORE');																									
 const nextStore = getNextRequiredStore();																									
 showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+startHandyScannerMode();																									
 }																									
 } else {																									
 showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
+startHandyScannerMode();																									
 }																									
 }																									
 																									
@@ -637,6 +650,7 @@ countsObj[s.storeCode] = cnt;
 																									
 if (Object.keys(countsObj).length === 0) {																									
 showStatus('送信するスキャンデータがありません', 'success');																									
+startHandyScannerMode();																									
 return;																									
 }																									
 																									
@@ -667,11 +681,13 @@ showStatus('スキャンした店舗の途中経過をスプレッドシート�
 if (!isAutoSync && isAllCompleted) {																									
 alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
 }																									
+startHandyScannerMode();																									
 } else {																									
 if (retryCount < maxRetries) {																									
 setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
 triggerError('❌ 反映に失敗しました。ネットワークを確認してください。');																									
+startHandyScannerMode();																									
 }																									
 }																									
 })																									
@@ -681,6 +697,7 @@ if (retryCount < maxRetries) {
 setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
 } else {																									
 triggerError('❌ 通信エラーにより反映できませんでした。');																									
+startHandyScannerMode();																									
 }																									
 });																									
 }																									
@@ -700,6 +717,7 @@ document.getElementById('videoCard').style.display = 'none';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 																									
 showStatus('アプリ側のデータをリセットしました', 'success');																									
+startHandyScannerMode();																									
 }																									
 }																									
 																									
@@ -724,6 +742,7 @@ currentData = null;
 switchMode('OUT_ITEM');																									
 setTimeout(() => {																									
 showStatus('最新状態に更新しました（未送信データなし）', 'success');																									
+startHandyScannerMode();																									
 }, 500);																									
 }																									
 																									
