@@ -72,14 +72,27 @@ width: 100%;
 background: #10b981;																									
 color: white;																									
 border: none;																									
-padding: 20px;																									
+padding: 22px;																									
 border-radius: 10px;																									
-font-size: 18px;																									
+font-size: 19px;																									
 font-weight: bold;																									
 cursor: pointer;																									
 box-sizing: border-box;																									
 text-align: center;																									
 box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);																									
+}																									
+.btn-scanner-mode {																									
+width: 100%;																									
+background: #f59e0b;																									
+color: white;																									
+border: none;																									
+padding: 16px;																									
+border-radius: 10px;																									
+font-size: 16px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+box-sizing: border-box;																									
+text-align: center;																									
 }																									
 .btn-sync {																									
 width: 100%;																									
@@ -227,24 +240,17 @@ z-index: 11;
 .corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 4px; }																									
 .corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 4px; }																									
 																									
-input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: center; border: 1px solid #ccc; border-radius: 6px; }																									
-																									
-/* 隠しスキャナー用入力欄（物理スキャナーの入力を常に受け付けるため） */																									
+/* ハンディスキャナー入力用隠しフィールド */																									
 #hiddenScannerInput {																									
 position: absolute;																									
 opacity: 0;																									
 pointer-events: none;																									
-height: 0;																									
-width: 0;																									
 }																									
 </style>																									
 </head>																									
-<body onclick="keepFocusOnScannerInput()">																									
+<body>																									
 																									
-<!-- 物理スキャナー常時受付用の隠し入力欄 -->																									
-<input type="text" id="hiddenScannerInput" autocomplete="off">																									
-																									
-<!-- 画面上部のリセットボタンと反映・更新ボタンを並べた配置エリア -->																									
+<!-- 画面上部のリセットボタンと反映・更新ボタン -->																									
 <div class="top-buttons-container">																									
 <button class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
 <button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映・更新</button>																									
@@ -252,6 +258,9 @@ width: 0;
 																									
 <!-- 常時見えるステータス表示エリア -->																									
 <div id="status" class="status" style="display:none;"></div>																									
+																									
+<!-- ハンディスキャナー用の隠し入力フィールド（常時フォーカス維持用） -->																									
+<input type="text" id="hiddenScannerInput" onkeydown="handleHiddenInputKeydown(event)">																									
 																									
 <!-- カメラ起動時に表示されるコンテナ -->																									
 <div class="card" id="videoCard" style="display:none;">																									
@@ -273,14 +282,14 @@ width: 0;
 <button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
 <button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
 </div>																									
-<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセル（スキャナー入力に戻る）</button>																									
+<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセル</button>																									
 </div>																									
 </div>																									
 																									
 <!-- アプリを開いた時の最初の画面 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b; font-size:14px; line-height:1.5;">物理スキャナーでバーコードを読み取るか、下の「スマホカメラでスキャン」ボタンを押してください。</div>																									
+<div style="color:#64748b; font-size:14px; line-height:1.5;">下のボタンからスキャン方法を選んでください。（ハンディスキャナーを使う場合は「スキャナー入力待受」をタップしてください）</div>																									
 </div>																									
 																									
 <!-- 個別商品のピッキング詳細画面 -->																									
@@ -293,12 +302,14 @@ width: 0;
 <div id="storeList"></div>																									
 </div>																									
 																									
+<!-- 画面下部の選択・操作ボタンエリア -->																									
 <div class="bottom-btn-container">																									
 <select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
-<button id="scanBtn" class="btn-action-full" onclick="startScan()">📷 スマホカメラでスキャン開始</button>																									
+<button id="scanBtn" class="btn-action-full" onclick="startCameraScan()">📷 スマホカメラでスキャン</button>																									
+<button id="scannerModeBtn" class="btn-scanner-mode" onclick="startHandyScannerMode()">⚡ ハンディスキャナーを使う</button>																									
 </div>																									
 																									
 <script>																									
@@ -312,32 +323,7 @@ let storeCounts = {};
 let isProcessing = false;																									
 let audioCtx = null;																									
 let currentZoom = 1.0;																									
-																									
-// 物理スキャナー（Bluetoothキーボード入力）のイベント設定																									
-const hiddenInput = document.getElementById('hiddenScannerInput');																									
-																									
-function keepFocusOnScannerInput() {																									
-// カメラ起動中でなければ常にバックグラウンドの入力欄にフォーカスを維持し、物理スキャナーの入力を拾えるようにする																									
-const videoCard = document.getElementById('videoCard');																									
-if (videoCard.style.display === 'none') {																									
-hiddenInput.focus();																									
-}																									
-}																									
-																									
-hiddenInput.addEventListener('keydown', function(e) {																									
-if (e.key === 'Enter') {																									
-const code = hiddenInput.value.trim();																									
-hiddenInput.value = ''; // クリア																									
-if (code) {																									
-handleScan(code);																									
-}																									
-}																									
-});																									
-																									
-// 画面のどこをクリックしてもスキャナー入力が有効になるようにする																									
-window.addEventListener('click', function(e) {																									
-keepFocusOnScannerInput();																									
-});																									
+let isHandyScannerActive = false;																									
 																									
 // 起動時のチェックと自動同期																									
 window.onload = function() {																									
@@ -362,14 +348,15 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(currentData);																									
 switchMode('OUT_STORE');																									
-showStatus('前回の作業データを復元しました。物理スキャナーで読み取るか、カメラでスキャンしてください。', 'success');																									
+showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
+// 復元時もハンディスキャナーが使えるように待受を有効化																									
+startHandyScannerMode();																									
 }																									
 } catch (e) {																									
 localStorage.removeItem('picking_current_data');																									
 localStorage.removeItem('picking_store_counts');																									
 }																									
 }																									
-keepFocusOnScannerInput();																									
 };																									
 																									
 function switchMode(mode) {																									
@@ -383,7 +370,38 @@ renderProductData(currentData);
 }																									
 }																									
 																									
-function startScan() {																									
+/* --- ハンディスキャナーモード（外部機器用） --- */																									
+function startHandyScannerMode() {																									
+isHandyScannerActive = true;																									
+const inputEl = document.getElementById('hiddenScannerInput');																									
+inputEl.focus();																									
+																									
+// 画面タッチ時にも隠し入力にフォーカスを戻してスキャナー入力を取りこぼさないようにする																									
+document.body.onclick = function() {																									
+if (isHandyScannerActive) {																									
+const activeEl = document.activeElement;																									
+if (!activeEl || activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'SELECT') {																									
+inputEl.focus();																									
+}																									
+}																									
+};																									
+																									
+showStatus('⚡ ハンディスキャナー待受中 (バーコードを読み取ってください)', 'success');																									
+document.getElementById('scannerModeBtn.active') // スタイル調整用																									
+}																									
+																									
+function handleHiddenInputKeydown(event) {																									
+if (event.key === 'Enter') {																									
+const code = event.target.value.trim();																									
+event.target.value = ''; // 入力をクリア																									
+if (code) {																									
+handleScan(code);																									
+}																									
+}																									
+}																									
+																									
+/* --- スマホカメラモード --- */																									
+function startCameraScan() {																									
 isProcessing = false;																									
 try {																									
 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
@@ -440,7 +458,6 @@ document.getElementById('outArea').style.display = 'block';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 }																									
 isProcessing = false;																									
-keepFocusOnScannerInput();																									
 }																									
 																									
 function setZoom(level) {																									
@@ -531,7 +548,7 @@ switchMode('OUT_ITEM');
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(`❌ 正しいバーコードを読み取ってください\n(未登録の商品です)`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(未登録の商品です)`);																									
 }																									
 })																									
 .catch(error => {																									
@@ -565,20 +582,20 @@ String(nextRequiredStore.storeName).trim()
 ].includes(scanned);																									
 																									
 if (!match) {																									
-triggerError(`❌ 正しいバーコードを読み取ってください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
 return;																									
 }																									
 																									
 playSuccessBeep();																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
-showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 物理スキャナーまたは「カメラでスキャン」で商品をスキャンしてください`, 'success');																									
+showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 商品をスキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
-triggerError(`❌ 正しいバーコードを読み取ってください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
 return;																									
 }																									
 																									
@@ -683,7 +700,6 @@ document.getElementById('videoCard').style.display = 'none';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 																									
 showStatus('アプリ側のデータをリセットしました', 'success');																									
-keepFocusOnScannerInput();																									
 }																									
 }																									
 																									
@@ -709,7 +725,6 @@ switchMode('OUT_ITEM');
 setTimeout(() => {																									
 showStatus('最新状態に更新しました（未送信データなし）', 'success');																									
 }, 500);																									
-keepFocusOnScannerInput();																									
 }																									
 																									
 function playSuccessBeep() {																									
