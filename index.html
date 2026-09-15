@@ -485,8 +485,8 @@ countNeedItemScan(code);
 }																									
 }																									
 																									
+// 【改良・完全版】fetchProductData 関数																									
 function fetchProductData(barcode) {																									
-// 【爆速化】スキャンした瞬間に即座にステータスを出して待たされている感を消す																									
 playSuccessBeep();																									
 showStatus('⚡ データを読み込んでいます...', 'success');																									
 																									
@@ -494,12 +494,25 @@ const isReverse = document.getElementById('sortOrder').value;
 const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`;																									
 																									
 const controller = new AbortController();																									
-const timer = setTimeout(() => controller.abort(), 20000);																									
+const timer = setTimeout(() => controller.abort(), 30000);																									
 																									
-fetch(url, { signal: controller.signal, mode: 'cors' })																									
-.then(response => response.json())																									
-.then(data => {																									
+fetch(url, {																									
+signal: controller.signal,																									
+method: 'GET',																									
+mode: 'cors',																									
+headers: {																									
+Accept': 'application/json'																									
+}																									
+})																									
+.then(response => {																									
 clearTimeout(timer);																									
+if (!response.ok) {																									
+throw new Error('サーバー応答エラー: ' + response.status);																									
+}																									
+return response.json();																									
+})																									
+.then(data => {																									
+isProcessing = false;																									
 if (data.success) {																									
 currentData = data;																									
 storeCounts = {};																									
@@ -520,12 +533,18 @@ switchMode('OUT_ITEM');
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(`❌ 正しいバーコードを読み取ってください\n(未登録の商品です)`);																									
+triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
 }																									
 })																									
 .catch(error => {																									
 clearTimeout(timer);																									
-triggerError(`❌ 通信エラーまたはタイムアウトが発生しました`);																									
+isProcessing = false;																									
+console.error(error);																									
+if (error.name === 'AbortError') {																									
+triggerError('❌ タイムアウトしました。電波が良い場所で再度お試しください。');																									
+} else {																									
+triggerError('❌ 通信エラーが発生しました（※GASの「新しいデプロイ」が完了しているかご確認ください）');																									
+}																									
 });																									
 }																									
 																									
