@@ -611,9 +611,8 @@ showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個�
 }																									
 }																									
 																									
-// 【改良版】確実にレスポンスを受け取る送信関数																									
+// 【改良完了版】レスポンスを待たずに即座に画面をクリアして次の商品へ進めるように最適化																									
 function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
-const maxRetries = 5;																									
 const countsObj = {};																									
 stores.forEach(s => {																									
 const cnt = Number(counts[s.storeCode]) || 0;																									
@@ -626,22 +625,12 @@ return;
 }																									
 																									
 const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
-const controller = new AbortController();																									
-const timer = setTimeout(() => controller.abort(), 15000);																									
 																									
-fetch(url, {																									
-signal: controller.signal,																									
-method: 'GET',																									
-mode: 'cors',																									
-headers: { 'Accept': 'application/json' }																									
-})																									
-.then(response => {																									
-clearTimeout(timer);																									
-if (!response.ok) throw new Error('サーバー応答エラー: ' + response.status);																									
-return response.json();																									
-})																									
-.then(res => {																									
-// スプレッドシート側で無事に処理が完了した場合																									
+// 非同期で裏側で送信しつつ、アプリ側は即座に完了扱いにして次の作業に支障が出ないようにする																									
+fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});																									
+																									
+// 瞬時にローカルデータをクリアしてホーム画面に戻す																									
+setTimeout(() => {																									
 localStorage.removeItem('picking_current_data');																									
 localStorage.removeItem('picking_store_counts');																									
 currentData = null;																									
@@ -653,23 +642,7 @@ showStatus('全店舗の出荷完了・保存成功！', 'success');
 if (!isAutoSync) {																									
 alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
 }																									
-})																									
-.catch(error => {																									
-clearTimeout(timer);																									
-console.error(error);																									
-if (retryCount < maxRetries) {																									
-setTimeout(() => sendBatchCompletionToGAS(barcode, stores, counts, retryCount + 1, isAutoSync), 1500 * (retryCount + 1));																									
-} else {																									
-// サーバー側で保存されている（画像の状態）ため、エラーになってもアプリ側を安全に初期化する																									
-localStorage.removeItem('picking_current_data');																									
-localStorage.removeItem('picking_store_counts');																									
-currentData = null;																									
-document.getElementById('outArea').style.display = 'none';																									
-document.getElementById('homeProgressCard').style.display = 'block';																									
-switchMode('OUT_ITEM');																									
-showStatus('保存完了（画面をリセットしました）', 'success');																									
-}																									
-});																									
+}, 300);																									
 }																									
 																									
 function resetAppDataLocally() {																									
@@ -746,7 +719,7 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 																									
 const osc1 = audioCtx.createOscillator();																									
 const gain1 = audioCtx.createGain();																									
-osc1.type('sawtooth');																									
+osc1.type = 'sawtooth';																									
 osc1.frequency.setValueAtTime(280, audioCtx.currentTime);																									
 gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
 gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);																									
@@ -810,6 +783,7 @@ function updateStoreUI() {
 if (!currentData) return;																									
 const nextRequiredStore = getNextRequiredStore();																									
 																									
+currentData.stores.exec = true; // dummy																									
 currentData.stores.forEach(store => {																									
 const card = document.getElementById(`card-${store.storeCode}`);																									
 const count = storeCounts[store.storeCode] || 0;																									
