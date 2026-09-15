@@ -798,3 +798,66 @@ el.style.display = 'block';
 </script>																									
 </body>																									
 </html>																									
+																									
+function renderProductData(data) {																									
+document.getElementById('outArea').style.display = 'block';																									
+document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
+																									
+const listEl = document.getElementById('storeList');																									
+listEl.innerHTML = '';																									
+																									
+data.stores.forEach(store => {																									
+const div = document.createElement('div');																									
+div.className = 'store-card';																									
+div.id = `card-${store.storeCode}`;																									
+																									
+div.innerHTML = `																									
+<div style="display: flex; align-items: center; gap: 12px;">																									
+<div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
+<div style="font-size: 10px; font-weight: normal;">Box No.</div>																									
+${store.storeNo}																									
+</div>																									
+<div style="flex-grow: 1;">																									
+<div style="font-size: 18px; font-weight: bold;">${store.storeName}</div>																									
+<div style="font-size: 13px; color: #666;">店番: ${store.storeCode}</div>																									
+<div style="font-size: 15px; margin-top: 4px;">																									
+投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
+</div>																									
+</div>																									
+</div>																									
+`;																									
+listEl.appendChild(div);																									
+});																									
+updateStoreUI();																									
+}																									
+																									
+function updateStoreUI() {																									
+if (!currentData) return;																									
+const nextRequiredStore = getNextRequiredStore();																									
+																									
+currentData.stores.forEach(store => {																									
+const card = document.getElementById(`card-${store.storeCode}`);																									
+const count = storeCounts[store.storeCode] || 0;																									
+																									
+if (card) {																									
+document.getElementById(`count-${store.storeCode}`).innerText = count;																									
+if (count >= store.qty) {																									
+card.className = 'store-card done';																									
+} else if (nextRequiredStore && String(store.storeCode) === String(nextRequiredStore.storeCode)) {																									
+card.className = 'store-card next-target';																									
+} else {																									
+card.className = 'store-card';																									
+}																									
+}																									
+});																									
+}																									
+																									
+function showStatus(msg, type) {																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
+}																									
+</script>																									
+</body>																									
+</html>																									
