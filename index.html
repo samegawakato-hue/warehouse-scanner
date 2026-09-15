@@ -1,527 +1,261 @@
-<!DOCTYPE html>																									
-<html lang="ja">																									
-<head>																									
-<meta charset="UTF-8">																									
-<meta name="viewport" content="width=device-width, initial-scale=1.0">																									
-<title>ピッキング管理</title>																									
-<script src="https://unpkg.com/@zxing/library@latest"></script>																									
-<style>																									
-body {																									
-font-family: -apple-system, sans-serif;																									
-background: #f4f6f9;																									
-margin: 0;																									
-padding: 12px;																									
-padding-bottom: 200px;																									
-}																									
-.card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
-																									
-.top-buttons-container {																									
-display: flex;																									
-justify-content: space-between;																									
-align-items: center;																									
-margin-bottom: 8px;																									
-gap: 8px;																									
-}																									
-.btn-reset-top {																									
-background: #dc2626; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 4px; white-space: nowrap;																									
-}																									
-.btn-sync-top {																									
-background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 4px; white-space: nowrap;																									
-}																									
-.bottom-btn-container {																									
-position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 10px; z-index: 1000;																									
-}																									
-.btn-action-full {																									
-width: 100%; background: #10b981; color: white; border: none; padding: 18px; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; box-sizing: border-box; text-align: center; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);																									
-}																									
-.btn-action-scanner {																									
-width: 100%; background: #8b5cf6; color: white; border: none; padding: 18px; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; box-sizing: border-box; text-align: center; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);																									
-}																									
-.btn-sync {																									
-width: 100%; background: #2563eb; color: white; border: none; padding: 16px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; box-sizing: border-box;																									
-}																									
-.select-sort {																									
-width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; font-weight: bold; background: #f8fafc; color: #334155;																									
-}																									
-.status { padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 10px; text-align: center; white-space: pre-wrap; font-size: 15px; }																									
-.status.success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }																									
-.status.error { background: #fee2e2; color: #dc2626; font-size: 16px; border: 1px solid #fecaca; }																									
-																									
-.store-card { border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-top: 8px; background: #fff; transition: all 0.2s; }																									
-.store-card.done { border-color: #94a3b8; background: #e2e8f0; color: #64748b; opacity: 0.7; }																									
-.store-card.next-target { border: 3px solid #2563eb; background: #eff6ff; box-shadow: 0 0 8px rgba(37,99,235,0.3); }																									
-																									
-.scanner-wrapper {																									
-position: relative; width: 100%; max-height: 380px; background: #000; border-radius: 8px; overflow: hidden; display: flex; justify-content: center; align-items: center; cursor: pointer;																									
-}																									
-video {																									
-width: 100% !important; height: auto !important; max-height: 380px; object-fit: cover; display: block; position: relative; z-index: 1; transform-origin: center center; transition: transform 0.1s ease-out;																									
-}																									
-.camera-controls { display: flex; gap: 8px; margin-top: 8px; }																									
-.btn-zoom { flex: 1; background: #334155; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; }																									
-.btn-zoom.active { background: #2563eb; }																									
-																									
-.focus-ring {																									
-position: absolute; width: 60px; height: 60px; border: 2px solid #fbbf24; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 25; animation: focusAnim 0.5s ease-out forwards;																									
-}																									
-@keyframes focusAnim {																									
-0% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }																									
-100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }																									
-}																									
-																									
-.scan-guide-box {																									
-position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 78%; height: 120px; pointer-events: none; z-index: 10; display: flex; align-items: center; justify-content: center;																									
-}																									
-.scan-guide-text {																									
-position: absolute; top: 8px; left: 0; right: 0; text-align: center; color: #fff; font-size: 13px; font-weight: bold; text-shadow: 0 1px 3px rgba(0,0,0,0.9); z-index: 12;																									
-}																									
-.scan-laser {																									
-position: absolute; width: 90%; height: 2px; background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: laserMove 2s infinite ease-in-out; z-index: 11;																									
-}																									
-@keyframes laserMove {																									
-0%, 100% { top: 20%; } 50% { top: 80%; }																									
-}																									
-.corner { position: absolute; width: 24px; height: 24px; border-color: #10b981; border-style: solid; border-width: 0; z-index: 11; }																									
-.corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 4px; }																									
-.corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 4px; }																									
-.corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 4px; }																									
-.corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 4px; }																									
-</style>																									
-</head>																									
-<body>																									
-																									
-<div class="top-buttons-container">																									
-<button class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
-<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映・更新</button>																									
-</div>																									
-																									
-<div id="status" class="status" style="display:none;"></div>																									
-																									
-<div class="card" id="videoCard" style="display:none;">																									
-<div id="videoContainer">																									
-<div class="scanner-wrapper" id="scannerWrapper" onclick="handleVideoTap(event)">																									
-<video id="video" autoplay playsinline muted></video>																									
-<div class="scan-guide-box">																									
-<div class="scan-guide-text">枠内にバーコードを合わせてください (タップで再フォーカス)</div>																									
-<div class="scan-laser"></div>																									
-<div class="corner corner-tl"></div><div class="corner corner-tr"></div>																									
-<div class="corner corner-bl"></div><div class="corner corner-br"></div>																									
-</div>																									
-</div>																									
-<div class="camera-controls">																									
-<button type="button" id="zoom1x" class="btn-zoom active" onclick="setZoom(1.0)">1.0x (標準)</button>																									
-<button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
-<button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
-</div>																									
-<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセル（カメラを閉じる）</button>																									
-</div>																									
-</div>																									
-																									
-<div class="card" id="homeProgressCard">																									
-<div style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b; font-size:14px; line-height:1.5;">下のボタンから「カメラ」または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
-</div>																									
-																									
-<div id="outArea" class="card" style="display:none;">																									
-<div style="text-align:center;">																									
-<h3 style="margin:0;">商品ピッキング詳細</h3>																									
-<div id="itemSub" style="color:#64748b; font-size:12px; margin-bottom:6px;"></div>																									
-</div>																									
-<hr style="border:0; border-top:1px solid #eee; margin:10px 0;">																									
-<div id="storeList"></div>																									
-</div>																									
-																									
-<div class="bottom-btn-container">																									
-<select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
-<option value="false">正順 (店舗 1 → 10)</option>																									
-<option value="true">逆順 (店舗 10 → 1)</option>																									
-</select>																									
-<button class="btn-action-full" onclick="startScan()">📷 カメラでスキャン開始</button>																									
-<button class="btn-action-scanner" onclick="activateScannerMode()">📡 スキャナーを使う（Bluetooth）</button>																									
-</div>																									
-																									
-<script>																									
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
-const codeReader = new ZXing.BrowserMultiFormatReader();																									
-let currentMode = 'OUT_ITEM', currentData = null, activeStoreCode = null;																									
-let storeCounts = {}, isProcessing = false, audioCtx = null, currentZoom = 1.0;																									
-																									
-window.onload = function() {																									
-const savedZoom = localStorage.getItem('picking_camera_zoom');																									
-if (savedZoom) currentZoom = parseFloat(savedZoom);																									
-																									
-const savedData = localStorage.getItem('picking_current_data');																									
-const savedCounts = localStorage.getItem('picking_store_counts');																									
-																									
-if (savedData && savedCounts) {																									
+/**																									
+* Web API エントリポイント																									
+*/																									
+function doGet(e) {																									
+let result = { success: false, error: '不明なリクエスト' };																									
 try {																									
-currentData = JSON.parse(savedData);																									
-storeCounts = JSON.parse(savedCounts);																									
-if (currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty)) {																									
-sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, true);																									
+const params = e ? e.parameter : {};																									
+const action = params.action || '';																									
+																									
+if (action === 'product') {																									
+const barcode = params.barcode;																									
+const isReverse = params.reverse === 'true';																									
+result = getProductDataFromShippingSheet(barcode, isReverse);																									
+} else if (action === 'recordCount') {																									
+const barcode = params.barcode;																									
+const storeCode = params.storeCode;																									
+const count = Number(params.count) || 1;																									
+result = markShippingCellAsGray(barcode, storeCode, count);																									
+} else if (action === 'recordBatch') {																									
+const barcode = params.barcode;																									
+const dataJson = params.data || '{}';																									
+const storeCountsMap = JSON.parse(dataJson);																									
+result = markBatchShippingCellsAsGray(barcode, storeCountsMap);																									
+} else if (action === 'getProgressList') {																									
+result = { success: true, products: [] };																									
+} else if (action === 'updateProgressSheet') {																									
+result = { success: true, message: "出荷データ入力シートを同期しました" };																									
 } else {																									
-document.getElementById('homeProgressCard').style.display = 'none';																									
-renderProductData(currentData);																									
-currentMode = 'OUT_STORE';																									
-showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
+result = { success: false, error: '不正なアクションです: ' + action };																									
 }																									
-} catch (e) {																									
-localStorage.removeItem('picking_current_data');																									
-localStorage.removeItem('picking_store_counts');																									
+} catch (err) {																									
+result = { success: false, error: 'GAS内部エラー: ' + err.toString() };																									
+}																									
+																									
+return ContentService.createTextOutput(JSON.stringify(result))																									
+.setMimeType(ContentService.MimeType.JSON);																									
+}																									
+																									
+/**																									
+* 【超高速化版】背景色チェックを廃止し、店舗の必要数のみを瞬時に取得する																									
+*/																									
+function getProductDataFromShippingSheet(barcode, isReverse) {																									
+const ss = SpreadsheetApp.getActiveSpreadsheet();																									
+const sheet = ss.getSheetByName('出荷データ入力');																									
+if (!sheet) {																									
+return { success: false, error: '「出荷データ入力」シートが見つかりません' };																									
+}																									
+																									
+const lastRow = sheet.getLastRow();																									
+const lastCol = sheet.getLastColumn();																									
+if (lastRow < 5 || lastCol < 4) {																									
+return { success: false, error: '「出荷データ入力」シートにデータが存在しません' };																									
+}																									
+																									
+// ヘッダー情報（店舗コードや名前）を一括取得																									
+const headerRange = sheet.getRange(1, 1, 4, lastCol).getValues();																									
+const row3 = headerRange[2];																									
+let storeStartCol = -1;																									
+for (let col = 0; col < row3.length; col++) {																									
+if (String(row3[col]).trim() !== '' && col >= 3) {																									
+storeStartCol = col;																									
+break;																									
 }																									
 }																									
-setupBluetoothScannerListener();																									
+if (storeStartCol === -1) storeStartCol = 3;																									
+const numStoreCols = lastCol - storeStartCol;																									
+																									
+const storeNos = headerRange[0].slice(storeStartCol, lastCol);																									
+const storeCodes = headerRange[2].slice(storeStartCol, lastCol);																									
+const storeNames = headerRange[3].slice(storeStartCol, lastCol);																									
+const targetBarcode = String(barcode || '').trim();																									
+																									
+// バーコード列（2列目）を一括取得して該当行を探す																									
+const barcodeValues = sheet.getRange(5, 2, lastRow - 4, 1).getValues();																									
+let targetRowIndex = -1;																									
+for (let i = 0; i < barcodeValues.length; i++) {																									
+if (String(barcodeValues[i][0] || '').trim() === targetBarcode) {																									
+targetRowIndex = i + 5;																									
+break;																									
+}																									
+}																									
+																									
+if (targetRowIndex === -1) {																									
+return { success: false, error: '該当商品（' + targetBarcode + '）の出荷データが見つかりません' };																									
+}																									
+																									
+// ★重い背景色取得(.getBackgrounds())をカットし、数値データ(.getValues())のみで爆速化																									
+const targetRowValues = sheet.getRange(targetRowIndex, 1, 1, lastCol).getValues()[0];																									
+																									
+const stores = [];																									
+let totalQty = 0;																									
+for (let c = 0; c < numStoreCols; c++) {																									
+const currentCol = storeStartCol + c;																									
+const qty = Number(targetRowValues[currentCol]) || 0;																									
+if (qty > 0) {																									
+const storeNo = String(storeNos[c] || '').trim();																									
+const storeCode = String(storeCodes[c] || '').trim();																									
+const storeName = String(storeNames[c] || '').trim();																									
+																									
+if (storeCode !== '') {																									
+stores.push({																									
+storeNo: storeNo,																									
+storeCode: storeCode,																									
+storeName: storeName,																									
+qty: qty,																									
+completedQty: 0,																									
+isCompleted: false																									
+});																									
+totalQty += qty;																									
+}																									
+}																									
+}																									
+																									
+if (stores.length === 0) {																									
+return { success: false, error: '該当商品（' + targetBarcode + '）の店舗指示数がすべて0です' };																									
+}																									
+																									
+if (isReverse) {																									
+stores.reverse();																									
+}																									
+																									
+return {																									
+success: true,																									
+barcode: targetBarcode,																									
+itemCode: targetBarcode,																									
+totalQty: totalQty,																									
+stores: stores																									
 };																									
-																									
-function onSortChange() {																									
-if (currentData) {																									
-currentData.stores.reverse();																									
-renderProductData(currentData);																									
-}																									
 }																									
 																									
-let scannerBuffer = '', scannerTimer = null;																									
-function setupBluetoothScannerListener() {																									
-document.addEventListener('keydown', (e) => {																									
-if (document.getElementById('videoCard').style.display === 'block') return;																									
-if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;																									
-																									
-if (e.key === 'Enter') {																									
-if (scannerBuffer.trim().length > 0) {																									
-const barcode = scannerBuffer.trim();																									
-scannerBuffer = '';																									
-if (scannerTimer) clearTimeout(scannerTimer);																									
-if (!isProcessing) {																									
-isProcessing = true;																									
-handleScan(barcode);																									
-setTimeout(() => { isProcessing = false; }, 300);																									
+/**																									
+* ピッキング完了時（個別店舗）：該当店舗セルを直接グレーアウト																									
+*/																									
+function markShippingCellAsGray(barcode, storeIdentifier, count) {																									
+const lock = LockService.getScriptLock();																									
+if (!lock.tryLock(20000)) {																									
+return { success: false, error: '混雑しています。もう一度実行してください。' };																									
 }																									
-}																									
-return;																									
-}																									
-																									
-if (e.key.length === 1) {																									
-scannerBuffer += e.key;																									
-if (scannerTimer) clearTimeout(scannerTimer);																									
-scannerTimer = setTimeout(() => { scannerBuffer = ''; }, 100);																									
-}																									
-});																									
-}																									
-																									
-function activateScannerMode() {																									
-playSuccessBeep();																									
-showStatus('📡 Bluetoothスキャナー待機中...\nスキャナーのトリガーを引いてバーコードを読み取ってください。', 'success');																									
-}																									
-																									
-function startScan() {																									
-isProcessing = false;																									
 try {																									
-if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
-if (audioCtx.state === 'suspended') audioCtx.resume();																									
-} catch (e) {}																									
+const ss = SpreadsheetApp.getActiveSpreadsheet();																									
+const sheet = ss.getSheetByName('出荷データ入力');																									
+if (!sheet) return { success: false, error: '「出荷データ入力」シートが見つかりません' };																									
 																									
-document.getElementById('videoCard').style.display = 'block';																									
-document.getElementById('homeProgressCard').style.display = 'none';																									
-document.getElementById('outArea').style.display = 'none';																									
-setZoom(currentZoom);																									
+const lastRow = sheet.getLastRow();																									
+const lastCol = sheet.getLastColumn();																									
+const targetBarcode = String(barcode || '').trim();																									
+const targetId = String(storeIdentifier || '').trim();																									
 																									
-codeReader.decodeFromVideoDevice(null, 'video', (result) => {																									
-if (result && !isProcessing) {																									
-const points = result.getResultPoints();																									
-if (points && points.length > 0) {																									
-let sumX = 0, sumY = 0;																									
-points.forEach(p => { sumX += p.getX(); sumY += p.getY(); });																									
-const avgX = sumX / points.length, avgY = sumY / points.length;																									
-const videoEl = document.getElementById('video');																									
-const vWidth = videoEl.videoWidth || videoEl.clientWidth;																									
-const vHeight = videoEl.videoHeight || videoEl.clientHeight;																									
-																									
-if (vWidth > 0 && vHeight > 0) {																									
-if (avgX >= vWidth * 0.11 && avgX <= vWidth * 0.89 && avgY >= vHeight * 0.35 && avgY <= vHeight * 0.65) {																									
-isProcessing = true;																									
-handleScan(result.text);																									
-}																									
-} else {																									
-isProcessing = true;																									
-handleScan(result.text);																									
+const barcodeValues = sheet.getRange(5, 2, lastRow - 4, 1).getValues();																									
+let targetRowIndex = -1;																									
+for (let i = 0; i < barcodeValues.length; i++) {																									
+if (String(barcodeValues[i][0] || '').trim() === targetBarcode) {																									
+targetRowIndex = i + 5;																									
+break;																									
 }																									
 }																									
-}																									
-});																									
-}																									
-																									
-function stopScan() {																									
-codeReader.reset();																									
-document.getElementById('videoCard').style.display = 'none';																									
-document.getElementById(currentData ? 'outArea' : 'homeProgressCard').style.display = 'block';																									
-isProcessing = false;																									
+if (targetRowIndex === -1) {																									
+return { success: false, error: '商品が見つかりません: ' + targetBarcode };																									
 }																									
 																									
-function setZoom(level) {																									
-currentZoom = level;																									
-localStorage.setItem('picking_camera_zoom', currentZoom);																									
-document.getElementById('video').style.transform = `scale(${currentZoom})`;																									
-['1x', '15x', '2x'].forEach(z => {																									
-document.getElementById('zoom' + z).className = level === (z === '1x' ? 1.0 : z === '15x' ? 1.5 : 2.0) ? 'btn-zoom active' : 'btn-zoom';																									
-});																									
+const row3 = sheet.getRange(3, 1, 1, lastCol).getValues()[0];																									
+let storeStartCol = -1;																									
+for (let col = 0; col < row3.length; col++) {																									
+if (String(row3[col]).trim() !== '' && col >= 3) {																									
+storeStartCol = col;																									
+break;																									
+}																									
+}																									
+if (storeStartCol === -1) storeStartCol = 3;																									
+const numStoreCols = lastCol - storeStartCol;																									
+const headerRange = sheet.getRange(1, storeStartCol + 1, 4, numStoreCols).getValues();																									
+const storeNos = headerRange[0];																									
+const storeCodes = headerRange[2];																									
+const storeNames = headerRange[3];																									
+																									
+let targetColIndex = -1;																									
+for (let c = 0; c < numStoreCols; c++) {																									
+const sNo = String(storeNos[c] || '').trim();																									
+const sCode = String(storeCodes[c] || '').trim();																									
+const sName = String(storeNames[c] || '').trim();																									
+if (targetId === sCode || targetId === sNo || targetId === sName) {																									
+targetColIndex = storeStartCol + 1 + c;																									
+break;																									
+}																									
+}																									
+if (targetColIndex === -1) {																									
+return { success: false, error: '店舗が見つかりません: ' + targetId };																									
 }																									
 																									
-function handleVideoTap(event) {																									
-const wrapper = document.getElementById('scannerWrapper');																									
-const rect = wrapper.getBoundingClientRect();																									
-const ring = document.createElement('div');																									
-ring.className = 'focus-ring';																									
-ring.style.left = `${event.clientX - rect.left}px`;																									
-ring.style.top = `${event.clientY - rect.top}px`;																									
-wrapper.appendChild(ring);																									
-setTimeout(() => ring.remove(), 500);																									
+const cell = sheet.getRange(targetRowIndex, targetColIndex);																									
+cell.setBackground('#d1d5db');																									
+cell.setFontColor('#4b5563');																									
+return { success: true };																									
+} catch (err) {																									
+return { success: false, error: 'グレー反映エラー: ' + err.toString() };																									
+} finally {																									
+lock.releaseLock();																									
+}																									
+}																									
 																									
+/**																									
+* 全店舗ピッキング完了時の一括グレーアウト（完了時にしっかりグレーに塗る処理）																									
+*/																									
+function markBatchShippingCellsAsGray(barcode, storeCountsMap) {																									
+const lock = LockService.getScriptLock();																									
+if (!lock.tryLock(20000)) {																									
+return { success: false, error: '混雑しています。もう一度実行してください。' };																									
+}																									
 try {																									
-const track = document.getElementById('video').srcObject?.getVideoTracks()[0];																									
-track?.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] }).catch(() => {});																									
-} catch (e) {}																									
+const ss = SpreadsheetApp.getActiveSpreadsheet();																									
+const sheet = ss.getSheetByName('出荷データ入力');																									
+if (!sheet) return { success: false, error: '「出荷データ入力」シートが見つかりません' };																									
+																									
+const lastRow = sheet.getLastRow();																									
+const lastCol = sheet.getLastColumn();																									
+const targetBarcode = String(barcode || '').trim();																									
+																									
+const barcodeValues = sheet.getRange(5, 2, lastRow - 4, 1).getValues();																									
+let targetRowIndex = -1;																									
+for (let i = 0; i < barcodeValues.length; i++) {																									
+if (String(barcodeValues[i][0] || '').trim() === targetBarcode) {																									
+targetRowIndex = i + 5;																									
+break;																									
+}																									
+}																									
+if (targetRowIndex === -1) {																									
+return { success: false, error: '商品が見つかりません: ' + targetBarcode };																									
 }																									
 																									
-function handleScan(code) {																									
-if (currentMode === 'OUT_ITEM') {																									
-stopScan();																									
-fetchProductData(code);																									
-} else if (currentMode === 'OUT_STORE') {																									
-stopScan();																									
-verifyStoreScan(code);																									
-} else if (currentMode === 'OUT_NEED') {																									
-countNeedItemScan(code);																									
+const row3 = sheet.getRange(3, 1, 1, lastCol).getValues()[0];																									
+let storeStartCol = -1;																									
+for (let col = 0; col < row3.length; col++) {																									
+if (String(row3[col]).trim() !== '' && col >= 3) {																									
+storeStartCol = col;																									
+break;																									
 }																									
 }																									
+if (storeStartCol === -1) storeStartCol = 3;																									
+const numStoreCols = lastCol - storeStartCol;																									
+const storeCodes = sheet.getRange(3, storeStartCol + 1, 1, numStoreCols).getValues()[0];																									
 																									
-function fetchProductData(barcode) {																									
-playSuccessBeep();																									
-showStatus('⚡ データを読み込んでいます...', 'success');																									
-																									
-const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${document.getElementById('sortOrder').value}`;																									
-const controller = new AbortController();																									
-const timer = setTimeout(() => controller.abort(), 30000);																									
-																									
-fetch(url, { signal: controller.signal, mode: 'cors', headers: { 'Accept': 'application/json' } })																									
-.then(res => res.json())																									
-.then(data => {																									
-clearTimeout(timer);																									
-isProcessing = false;																									
-if (data.success) {																									
-currentData = data;																									
-storeCounts = {};																									
-data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
-localStorage.setItem('picking_current_data', JSON.stringify(currentData));																									
-localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
-																									
-document.getElementById('homeProgressCard').style.display = 'none';																									
-renderProductData(data);																									
-currentMode = 'OUT_STORE';																									
-																									
-const nextStore = getNextRequiredStore();																									
-if (!nextStore) {																									
-showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
-currentMode = 'OUT_ITEM';																									
-} else {																									
-showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-}																									
-} else {																									
-triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
-}																									
-})																									
-.catch(() => {																									
-clearTimeout(timer);																									
-isProcessing = false;																									
-triggerError('❌ 通信エラーまたはタイムアウトが発生しました');																									
-});																									
-}																									
-																									
-function getNextRequiredStore() {																									
-return currentData?.stores?.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
-}																									
-																									
-function verifyStoreScan(storeCode) {																									
-if (!currentData) return triggerError('先に「出荷商品」をスキャンしてください');																									
-const nextStore = getNextRequiredStore();																									
-if (!nextStore) return triggerError('すべての店舗へのピッキングが完了しています');																									
-																									
-const scanned = String(storeCode).trim();																									
-if (![String(nextStore.storeCode), String(nextStore.storeNo), String(nextStore.storeName)].includes(scanned)) {																									
-return triggerError(`❌ 正しい店舗バーコードを読み取ってください\n(次：【箱No.${nextStore.storeNo}】${nextStore.storeName})`);																									
-}																									
-																									
-playSuccessBeep();																									
-activeStoreCode = nextStore.storeCode;																									
-currentMode = 'OUT_NEED';																									
-showStatus(`スキャン成功！ (${nextStore.storeName}): 商品をスキャンしてください`, 'success');																									
-}																									
-																									
-function countNeedItemScan(barcode) {																									
-if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
-return triggerError(`❌ 違う商品です。正しい商品バーコード: ${currentData.barcode}`);																									
-}																									
-																									
-playSuccessBeep();																									
-const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
-storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
-const count = storeCounts[activeStoreCode];																									
-																									
-localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
-updateStoreUI();																									
-																									
-if (count >= targetStore.qty) {																									
-if (currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty)) {																									
-showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
-sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, false);																									
-} else {																									
-currentMode = 'OUT_STORE';																									
-const nextStore = getNextRequiredStore();																									
-showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
-}																									
-} else {																									
-showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
+for (let c = 0; c < numStoreCols; c++) {																									
+const sCode = String(storeCodes[c] || '').trim();																									
+if (storeCountsMap.hasOwnProperty(sCode)) {																									
+const targetColIndex = storeStartCol + 1 + c;																									
+const cell = sheet.getRange(targetRowIndex, targetColIndex);																									
+cell.setBackground('#d1d5db');																									
+cell.setFontColor('#4b5563');																									
 }																									
 }																									
 																									
-function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
-const countsObj = {};																									
-stores.forEach(s => {																									
-const cnt = Number(counts[s.storeCode]) || 0;																									
-if (cnt > 0) countsObj[s.storeCode] = cnt;																									
-});																									
+sheet.getRange(targetRowIndex, 1).setBackground('#d1d5db');																									
+sheet.getRange(targetRowIndex, 1).setFontColor('#4b5563');																									
 																									
-if (Object.keys(countsObj).length === 0) return;																									
-																									
-const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
-fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});																									
-																									
-setTimeout(() => {																									
-localStorage.removeItem('picking_current_data');																									
-localStorage.removeItem('picking_store_counts');																									
-currentData = null;																									
-document.getElementById('outArea').style.display = 'none';																									
-document.getElementById('homeProgressCard').style.display = 'block';																									
-currentMode = 'OUT_ITEM';																									
-showStatus('全店舗の出荷完了・保存成功！', 'success');																									
-if (!isAutoSync) alert(`🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！`);																									
-}, 300);																									
-}																									
-																									
-function resetAppDataLocally() {																									
-if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
-localStorage.clear();																									
-currentData = null; storeCounts = {}; activeStoreCode = null; currentMode = 'OUT_ITEM';																									
-document.getElementById('outArea').style.display = 'none';																									
-document.getElementById('videoCard').style.display = 'none';																									
-document.getElementById('homeProgressCard').style.display = 'block';																									
-showStatus('アプリ側のデータをリセットしました', 'success');																									
+return { success: true };																									
+} catch (err) {																									
+return { success: false, error: '一括反映エラー: ' + err.toString() };																									
+} finally {																									
+lock.releaseLock();																									
 }																									
 }																									
-																									
-function syncData() {																									
-showStatus('スプレッドシートへデータを反映中...', 'success');																									
-const savedData = localStorage.getItem('picking_current_data');																									
-const savedCounts = localStorage.getItem('picking_store_counts');																									
-																									
-if (savedData && savedCounts) {																									
-try {																									
-sendBatchCompletionToGAS(JSON.parse(savedData).barcode, JSON.parse(savedData).stores, JSON.parse(savedCounts), 0, false);																									
-return;																									
-} catch (e) {}																									
-}																									
-document.getElementById('homeProgressCard').style.display = 'block';																									
-document.getElementById('outArea').style.display = 'none';																									
-currentData = null;																									
-currentMode = 'OUT_ITEM';																									
-setTimeout(() => showStatus('最新状態に更新しました（未送信データなし）', 'success'), 500);																									
-}																									
-																									
-function playBeep(freq1, freq2, dur) {																									
-try {																									
-if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
-if (audioCtx.state === 'suspended') audioCtx.resume();																									
-[ [freq1, 0, dur], [freq2, dur + 0.02, dur] ].forEach(([f, t, d]) => {																									
-const osc = audioCtx.createOscillator(), g = audioCtx.createGain();																									
-osc.frequency.setValueAtTime(f, audioCtx.currentTime + t);																									
-g.gain.setValueAtTime(0.2, audioCtx.currentTime + t);																									
-g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + t + d);																									
-osc.connect(g); g.connect(audioCtx.destination);																									
-osc.start(audioCtx.currentTime + t); osc.stop(audioCtx.currentTime + t + d);																									
-});																									
-} catch (e) {}																									
-}																									
-																									
-function playSuccessBeep() { playBeep(880, 1174.66, 0.1); }																									
-function playBuzzer() {																									
-try {																									
-if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
-if (audioCtx.state === 'suspended') audioCtx.resume();																									
-const osc = audioCtx.createOscillator(), g = audioCtx.createGain();																									
-osc.type = 'sawtooth'; osc.frequency.setValueAtTime(280, audioCtx.currentTime);																									
-g.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
-g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);																									
-osc.connect(g); g.connect(audioCtx.destination);																									
-osc.start(audioCtx.currentTime); osc.stop(audioCtx.currentTime + 0.2);																									
-} catch (e) {}																									
-}																									
-																									
-function triggerError(msg) {																									
-stopScan(); // エラー発生時にカメラを確実に閉じる																									
-showStatus(msg, 'error');																									
-if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
-playBuzzer();																									
-}																									
-																									
-function renderProductData(data) {																									
-document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
-const listEl = document.getElementById('storeList');																									
-listEl.innerHTML = '';																									
-																									
-data.stores.forEach(store => {																									
-const div = document.createElement('div');																									
-div.className = 'store-card';																									
-div.id = `card-${store.storeCode}`;																									
-div.innerHTML = `																									
-<div style="display: flex; align-items: center; gap: 12px;">																									
-<div style="background: #2563eb; color: #fff; font-size: 22px; font-weight: bold; padding: 8px 14px; border-radius: 8px; text-align: center; min-width: 55px;">																									
-<div style="font-size: 10px; font-weight: normal;">Box No.</div>																									
-${store.storeNo}																									
-</div>																									
-<div style="flex-grow: 1;">																									
-<div style="font-size: 18px; font-weight: bold;">${store.storeName}</div>																									
-<div style="font-size: 13px; color: #666;">店番: ${store.storeCode}</div>																									
-<div style="font-size: 15px; margin-top: 4px;">																									
-投入数: <span id="count-${store.storeCode}" style="font-size: 20px; color: #2563eb; font-weight: bold;">0</span> / ${store.qty} 個																									
-</div>																									
-</div>																									
-</div>`;																									
-listEl.appendChild(div);																									
-});																									
-updateStoreUI();																									
-}																									
-																									
-function updateStoreUI() {																									
-if (!currentData) return;																									
-const nextStore = getNextRequiredStore();																									
-currentData.stores.forEach(store => {																									
-const card = document.getElementById(`card-${store.storeCode}`);																									
-const count = storeCounts[store.storeCode] || 0;																									
-if (card) {																									
-document.getElementById(`count-${store.storeCode}`).innerText = count;																									
-if (count >= store.qty) card.className = 'store-card done';																									
-else if (nextStore && String(store.storeCode) === String(nextStore.storeCode)) card.className = 'store-card next-target';																									
-else card.className = 'store-card';																									
-}																									
-});																									
-}																									
-																									
-function showStatus(msg, type) {																									
-const el = document.getElementById('status');																									
-el.innerText = msg;																									
-el.className = `status ${type}`;																									
-el.style.display = 'block';																									
-}																									
-</script>																									
-</body>																									
-</html>																									
