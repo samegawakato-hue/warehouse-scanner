@@ -15,7 +15,7 @@ padding-bottom: 200px;
 }																									
 .card { background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }																									
 																									
-/* ボタンとステータスのレイアウト調整 */																									
+/* ボタンとステータスのレイアウト調整（ボタンと文字が被らないように上部に余白を確保） */																									
 .top-buttons-container {																									
 display: flex;																									
 justify-content: space-between;																									
@@ -72,28 +72,14 @@ width: 100%;
 background: #10b981;																									
 color: white;																									
 border: none;																									
-padding: 18px;																									
+padding: 22px;																									
 border-radius: 10px;																									
-font-size: 17px;																									
+font-size: 19px;																									
 font-weight: bold;																									
 cursor: pointer;																									
 box-sizing: border-box;																									
 text-align: center;																									
 box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);																									
-}																									
-.btn-action-scanner {																									
-width: 100%;																									
-background: #8b5cf6;																									
-color: white;																									
-border: none;																									
-padding: 18px;																									
-border-radius: 10px;																									
-font-size: 17px;																									
-font-weight: bold;																									
-cursor: pointer;																									
-box-sizing: border-box;																									
-text-align: center;																									
-box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);																									
 }																									
 .btn-sync {																									
 width: 100%;																									
@@ -275,14 +261,14 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
 <button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
 </div>																									
-<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセル（カメラを閉じる）</button>																									
+<button onclick="stopScan()" class="btn-sync" style="margin-top:8px; background:#94a3b8; position:relative; z-index:20;">キャンセリスキャン</button>																									
 </div>																									
 </div>																									
 																									
 <!-- アプリを開いた時の最初の画面 -->																									
 <div class="card" id="homeProgressCard">																									
 <div id="modeTitle" style="font-weight:bold; font-size:16px; margin-bottom:6px; color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b; font-size:14px; line-height:1.5;">下のボタンから「カメラ」または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
+<div style="color:#64748b; font-size:14px; line-height:1.5;">下の「スキャン開始」ボタンを押して、最初に出荷する商品をスキャンしてください。</div>																									
 </div>																									
 																									
 <!-- 個別商品のピッキング詳細画面 -->																									
@@ -300,8 +286,7 @@ input[type="number"] { width: 80px; font-size: 18px; padding: 6px; text-align: c
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
-<button id="scanBtn" class="btn-action-full" onclick="startScan()">📷 カメラでスキャン開始</button>																									
-<button id="scannerBtn" class="btn-action-scanner" onclick="activateScannerMode()">📡 スキャナーを使う（Bluetooth）</button>																									
+<button id="scanBtn" class="btn-action-full">📷 スキャン開始（商品または箱）</button>																									
 </div>																									
 																									
 <script>																									
@@ -316,9 +301,14 @@ let isProcessing = false;
 let audioCtx = null;																									
 let currentZoom = 1.0;																									
 																									
+document.getElementById('scanBtn').addEventListener('click', startScan);																									
+																									
+// 起動時のチェックと自動同期																									
 window.onload = function() {																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
-if (savedZoom) currentZoom = parseFloat(savedZoom);																									
+if (savedZoom) {																									
+currentZoom = parseFloat(savedZoom);																									
+}																									
 																									
 const savedData = localStorage.getItem('picking_current_data');																									
 const savedCounts = localStorage.getItem('picking_store_counts');																									
@@ -343,52 +333,17 @@ localStorage.removeItem('picking_current_data');
 localStorage.removeItem('picking_store_counts');																									
 }																									
 }																									
-setupBluetoothScannerListener();																									
 };																									
 																									
-function switchMode(mode) { currentMode = mode; }																									
+function switchMode(mode) {																									
+currentMode = mode;																									
+}																									
 																									
 function onSortChange() {																									
 if (currentData) {																									
 currentData.stores.reverse();																									
 renderProductData(currentData);																									
 }																									
-}																									
-																									
-let scannerBuffer = '';																									
-let scannerTimer = null;																									
-																									
-function setupBluetoothScannerListener() {																									
-document.addEventListener('keydown', (e) => {																									
-if (document.getElementById('videoCard').style.display === 'block') return;																									
-if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;																									
-																									
-if (e.key === 'Enter') {																									
-if (scannerBuffer.trim().length > 0) {																									
-const barcode = scannerBuffer.trim();																									
-scannerBuffer = '';																									
-if (scannerTimer) clearTimeout(scannerTimer);																									
-																									
-if (!isProcessing) {																									
-isProcessing = true;																									
-handleScan(barcode);																									
-setTimeout(() => { isProcessing = false; }, 300);																									
-}																									
-}																									
-return;																									
-}																									
-																									
-if (e.key.length === 1) {																									
-scannerBuffer += e.key;																									
-if (scannerTimer) clearTimeout(scannerTimer);																									
-scannerTimer = setTimeout(() => { scannerBuffer = ''; }, 100);																									
-}																									
-});																									
-}																									
-																									
-function activateScannerMode() {																									
-playSuccessBeep();																									
-showStatus('📡 Bluetoothスキャナー待機中...\nスキャナーのトリガーを引いてバーコードを読み取ってください。', 'success');																									
 }																									
 																									
 function startScan() {																									
@@ -401,6 +356,7 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 document.getElementById('videoCard').style.display = 'block';																									
 document.getElementById('homeProgressCard').style.display = 'none';																									
 document.getElementById('outArea').style.display = 'none';																									
+																									
 setZoom(currentZoom);																									
 																									
 codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {																									
@@ -408,7 +364,10 @@ if (result && !isProcessing) {
 const points = result.getResultPoints();																									
 if (points && points.length > 0) {																									
 let sumX = 0, sumY = 0;																									
-points.forEach(p => { sumX += p.getX(); sumY += p.getY(); });																									
+points.forEach(p => {																									
+sumX += p.getX();																									
+sumY += p.getY();																									
+});																									
 const avgX = sumX / points.length;																									
 const avgY = sumY / points.length;																									
 																									
@@ -417,7 +376,11 @@ const vWidth = videoEl.videoWidth || videoEl.clientWidth;
 const vHeight = videoEl.videoHeight || videoEl.clientHeight;																									
 																									
 if (vWidth > 0 && vHeight > 0) {																									
-const minX = vWidth * 0.11, maxX = vWidth * 0.89, minY = vHeight * 0.35, maxY = vHeight * 0.65;																									
+const minX = vWidth * 0.11;																									
+const maxX = vWidth * 0.89;																									
+const minY = vHeight * 0.35;																									
+const maxY = vHeight * 0.65;																									
+																									
 if (avgX >= minX && avgX <= maxX && avgY >= minY && avgY <= maxY) {																									
 isProcessing = true;																									
 handleScan(result.text);																									
@@ -445,8 +408,10 @@ isProcessing = false;
 function setZoom(level) {																									
 currentZoom = level;																									
 localStorage.setItem('picking_camera_zoom', currentZoom);																									
+																									
 const videoEl = document.getElementById('video');																									
 videoEl.style.transform = `scale(${currentZoom})`;																									
+																									
 document.getElementById('zoom1x').className = level === 1.0 ? 'btn-zoom active' : 'btn-zoom';																									
 document.getElementById('zoom15x').className = level === 1.5 ? 'btn-zoom active' : 'btn-zoom';																									
 document.getElementById('zoom2x').className = level === 2.0 ? 'btn-zoom active' : 'btn-zoom';																									
@@ -455,10 +420,13 @@ document.getElementById('zoom2x').className = level === 2.0 ? 'btn-zoom active' 
 function handleVideoTap(event) {																									
 const wrapper = document.getElementById('scannerWrapper');																									
 const rect = wrapper.getBoundingClientRect();																									
-const x = event.clientX - rect.left, y = event.clientY - rect.top;																									
+const x = event.clientX - rect.left;																									
+const y = event.clientY - rect.top;																									
+																									
 const ring = document.createElement('div');																									
 ring.className = 'focus-ring';																									
-ring.style.left = `${x}px`; ring.style.top = `${y}px`;																									
+ring.style.left = `${x}px`;																									
+ring.style.top = `${y}px`;																									
 wrapper.appendChild(ring);																									
 setTimeout(() => ring.remove(), 500);																									
 																									
@@ -467,7 +435,13 @@ const videoEl = document.getElementById('video');
 if (videoEl && videoEl.srcObject) {																									
 const track = videoEl.srcObject.getVideoTracks()[0];																									
 if (track && track.applyConstraints) {																									
-track.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] }).catch(() => {});																									
+track.applyConstraints({																									
+advanced: [{ focusMode: 'single-shot' }]																									
+}).catch(() => {																									
+track.applyConstraints({																									
+advanced: [{ focusMode: 'continuous' }]																									
+}).catch(() => {});																									
+});																									
 }																									
 }																									
 } catch (e) {}																									
@@ -485,35 +459,20 @@ countNeedItemScan(code);
 }																									
 }																									
 																									
-// 【改良・完全版】fetchProductData 関数																									
 function fetchProductData(barcode) {																									
-playSuccessBeep();																									
-showStatus('⚡ データを読み込んでいます...', 'success');																									
-																									
+showStatus('スキャン成功！出荷データ入力シートから読み込み中...', 'success');																									
 const isReverse = document.getElementById('sortOrder').value;																									
 const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${isReverse}`;																									
 																									
 const controller = new AbortController();																									
 const timer = setTimeout(() => controller.abort(), 30000);																									
 																									
-fetch(url, {																									
-signal: controller.signal,																									
-method: 'GET',																									
-mode: 'cors',																									
-headers: {																									
-Accept': 'application/json'																									
-}																									
-})																									
-.then(response => {																									
-clearTimeout(timer);																									
-if (!response.ok) {																									
-throw new Error('サーバー応答エラー: ' + response.status);																									
-}																									
-return response.json();																									
-})																									
+fetch(url, { signal: controller.signal, mode: 'cors' })																									
+.then(response => response.json())																									
 .then(data => {																									
-isProcessing = false;																									
+clearTimeout(timer);																									
 if (data.success) {																									
+playSuccessBeep();																									
 currentData = data;																									
 storeCounts = {};																									
 data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
@@ -524,6 +483,7 @@ localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));
 document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
 switchMode('OUT_STORE');																									
+stopScan();																									
 																									
 const nextStore = getNextRequiredStore();																									
 if (!nextStore) {																									
@@ -533,18 +493,12 @@ switchMode('OUT_ITEM');
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
 } else {																									
-triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(未登録の商品です)`);																									
 }																									
 })																									
 .catch(error => {																									
 clearTimeout(timer);																									
-isProcessing = false;																									
-console.error(error);																									
-if (error.name === 'AbortError') {																									
-triggerError('❌ タイムアウトしました。電波が良い場所で再度お試しください。');																									
-} else {																									
-triggerError('❌ 通信エラーが発生しました（※GASの「新しいデプロイ」が完了しているかご確認ください）');																									
-}																									
+triggerError(`❌ 通信エラーまたはタイムアウトが発生しました`);																									
 });																									
 }																									
 																									
@@ -573,20 +527,20 @@ String(nextRequiredStore.storeName).trim()
 ].includes(scanned);																									
 																									
 if (!match) {																									
-triggerError(`❌ 正しい店舗バーコードを読み取ってください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(次に向かうべき店舗：【箱No.${nextRequiredStore.storeNo}】${nextRequiredStore.storeName})`);																									
 return;																									
 }																									
 																									
 playSuccessBeep();																									
 activeStoreCode = nextRequiredStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
-showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 商品をスキャンしてください`, 'success');																									
+showStatus(`スキャン成功！ (${nextRequiredStore.storeName}): 「スキャン開始」を押して商品をスキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
 if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
-triggerError(`❌ 正しいバーコードを読み取ってください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
+triggerError(`❌ 正しいバーコードを枠内に合わせてください\n(違う商品です。正しい商品バーコード: ${currentData.barcode})`);																									
 return;																									
 }																									
 																									
@@ -621,7 +575,9 @@ const maxRetries = 5;
 const countsObj = {};																									
 stores.forEach(s => {																									
 const cnt = Number(counts[s.storeCode]) || 0;																									
-if (cnt > 0) countsObj[s.storeCode] = cnt;																									
+if (cnt > 0) {																									
+countsObj[s.storeCode] = cnt;																									
+}																									
 });																									
 																									
 if (Object.keys(countsObj).length === 0) {																									
@@ -630,6 +586,7 @@ return;
 }																									
 																									
 const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&_t=${Date.now()}`;																									
+																									
 const controller = new AbortController();																									
 const timer = setTimeout(() => controller.abort(), 12000);																									
 																									
@@ -639,6 +596,7 @@ fetch(url, { signal: controller.signal, mode: 'cors' })
 clearTimeout(timer);																									
 if (res && res.success) {																									
 const isAllCompleted = stores.every(s => (Number(counts[s.storeCode]) || 0) >= s.qty);																									
+																									
 if (isAllCompleted) {																									
 localStorage.removeItem('picking_current_data');																									
 localStorage.removeItem('picking_store_counts');																									
@@ -676,19 +634,23 @@ function resetAppDataLocally() {
 if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
 localStorage.removeItem('picking_current_data');																									
 localStorage.removeItem('picking_store_counts');																									
+																									
 currentData = null;																									
 storeCounts = {};																									
 activeStoreCode = null;																									
 switchMode('OUT_ITEM');																									
+																									
 document.getElementById('outArea').style.display = 'none';																									
 document.getElementById('videoCard').style.display = 'none';																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
+																									
 showStatus('アプリ側のデータをリセットしました', 'success');																									
 }																									
 }																									
 																									
 function syncData() {																									
 showStatus('スプレッドシートへデータを反映中...', 'success');																									
+																									
 const savedData = localStorage.getItem('picking_current_data');																									
 const savedCounts = localStorage.getItem('picking_store_counts');																									
 																									
