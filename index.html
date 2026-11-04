@@ -404,12 +404,10 @@ window.onload = function() {
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) currentZoom = parseFloat(savedZoom);																									
 																									
-// 作業者名の確認																									
 const savedWorker = localStorage.getItem('picking_worker_name');																									
 if (savedWorker) {																									
 document.getElementById('displayWorkerName').innerText = savedWorker;																									
 } else {																									
-// 未設定ならモーダル表示																									
 openWorkerModal();																									
 }																									
 																									
@@ -488,7 +486,6 @@ scannerBuffer = '';
 if (scannerTimer) clearTimeout(scannerTimer);																									
 if (!isProcessing) {																									
 isProcessing = true;																									
-// スキャナー利用時も作業者チェック																									
 const worker = localStorage.getItem('picking_worker_name');																									
 if (!worker) {																									
 isProcessing = false;																									
@@ -726,7 +723,6 @@ if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完
 																									
 function resetAppDataLocally() {																									
 if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
-// 作業者名は残す																									
 const worker = localStorage.getItem('picking_worker_name');																									
 localStorage.clear();																									
 if (worker) localStorage.setItem('picking_worker_name', worker);																									
@@ -784,7 +780,8 @@ if (audioCtx.state === 'suspended') audioCtx.resume();
 const osc = audioCtx.createOscillator();																									
 const g = audioCtx.createGain();																									
 osc.frequency.setValueAtTime(f, audioCtx.currentTime + t);																									
-g.gain.setValueAtTime(0.2, audioCtx.currentTime + t);																									
+// 【音量アップ】音量ゲインを 0.2 から 1.0（最大）に引き上げ																									
+g.gain.setValueAtTime(1.0, audioCtx.currentTime + t);																									
 g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + t + d);																									
 osc.connect(g);																									
 g.connect(audioCtx.destination);																									
@@ -806,7 +803,8 @@ const osc = audioCtx.createOscillator();
 const g = audioCtx.createGain();																									
 osc.type = 'sawtooth';																									
 osc.frequency.setValueAtTime(280, audioCtx.currentTime);																									
-g.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
+// 【音量アップ】エラー音の音量ゲインを 0.3 から 1.0（最大）に引き上げ																									
+g.gain.setValueAtTime(1.0, audioCtx.currentTime);																									
 g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);																									
 osc.connect(g);																									
 g.connect(audioCtx.destination);																									
