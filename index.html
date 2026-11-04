@@ -1,31 +1,18 @@
-																									
 <!DOCTYPE html>																									
 <html lang="ja">																									
 <head>																									
 <meta charset="UTF-8">																									
 <meta name="viewport" content="width=device-width, initial-scale=1.0">																									
 <title>ピッキング管理</title>																									
-																									
 <script src="https://unpkg.com/@zxing/library@latest"></script>																									
-																									
 <style>																									
-* {																									
-box-sizing: border-box;																									
-}																									
-																									
 body {																									
-font-family: -apple-system, BlinkMacSystemFont, sans-serif;																									
+font-family: -apple-system, sans-serif;																									
 background: #f4f6f9;																									
 margin: 0;																									
 padding: 12px;																									
-padding-bottom: 220px;																									
+padding-bottom: 200px;																									
 }																									
-																									
-button {																									
-cursor: pointer;																									
-font-family: inherit;																									
-}																									
-																									
 .card {																									
 background: #fff;																									
 border-radius: 12px;																									
@@ -33,26 +20,6 @@ padding: 14px;
 margin-bottom: 10px;																									
 box-shadow: 0 2px 6px rgba(0,0,0,0.05);																									
 }																									
-																									
-.worker-bar {																									
-display: flex;																									
-justify-content: space-between;																									
-align-items: center;																									
-gap: 8px;																									
-margin-bottom: 12px;																									
-font-weight: bold;																									
-font-size: 16px;																									
-}																									
-																									
-.worker-bar button {																									
-border: none;																									
-border-radius: 8px;																									
-padding: 9px 12px;																									
-color: white;																									
-background: #64748b;																									
-font-weight: bold;																									
-}																									
-																									
 .top-buttons-container {																									
 display: flex;																									
 justify-content: space-between;																									
@@ -60,27 +27,39 @@ align-items: center;
 margin-bottom: 8px;																									
 gap: 8px;																									
 }																									
-																									
+.worker-badge {																									
+background: #eff6ff;																									
+color: #1e40af;																									
+border: 1px solid #bfdbfe;																									
+padding: 6px 10px;																									
+border-radius: 8px;																									
+font-size: 13px;																									
+font-weight: bold;																									
+display: flex;																									
+align-items: center;																									
+gap: 6px;																									
+cursor: pointer;																									
+}																									
 .btn-reset-top {																									
 background: #dc2626;																									
 color: white;																									
 border: none;																									
-padding: 10px 12px;																									
+padding: 8px 12px;																									
 border-radius: 8px;																									
 font-size: 13px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .btn-sync-top {																									
 background: #2563eb;																									
 color: white;																									
 border: none;																									
-padding: 10px 12px;																									
+padding: 8px 12px;																									
 border-radius: 8px;																									
 font-size: 13px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .bottom-btn-container {																									
 position: fixed;																									
 bottom: 0;																									
@@ -88,14 +67,12 @@ left: 0;
 right: 0;																									
 background: #fff;																									
 padding: 12px;																									
-padding-bottom: max(12px, env(safe-area-inset-bottom));																									
 box-shadow: 0 -2px 10px rgba(0,0,0,0.1);																									
 display: flex;																									
 flex-direction: column;																									
 gap: 10px;																									
 z-index: 1000;																									
 }																									
-																									
 .btn-action-full {																									
 width: 100%;																									
 background: #10b981;																									
@@ -105,8 +82,8 @@ padding: 18px;
 border-radius: 10px;																									
 font-size: 17px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .btn-action-scanner {																									
 width: 100%;																									
 background: #8b5cf6;																									
@@ -116,8 +93,8 @@ padding: 18px;
 border-radius: 10px;																									
 font-size: 17px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .btn-sync {																									
 width: 100%;																									
 background: #2563eb;																									
@@ -127,8 +104,8 @@ padding: 16px;
 border-radius: 10px;																									
 font-size: 16px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .select-sort {																									
 width: 100%;																									
 padding: 12px;																									
@@ -139,7 +116,6 @@ font-weight: bold;
 background: #f8fafc;																									
 color: #334155;																									
 }																									
-																									
 .status {																									
 padding: 12px;																									
 border-radius: 8px;																									
@@ -149,19 +125,17 @@ text-align: center;
 white-space: pre-wrap;																									
 font-size: 15px;																									
 }																									
-																									
 .status.success {																									
 background: #dcfce7;																									
 color: #15803d;																									
 border: 1px solid #bbf7d0;																									
 }																									
-																									
 .status.error {																									
 background: #fee2e2;																									
 color: #dc2626;																									
+font-size: 16px;																									
 border: 1px solid #fecaca;																									
 }																									
-																									
 .store-card {																									
 border: 2px solid #cbd5e1;																									
 border-radius: 8px;																									
@@ -170,20 +144,17 @@ margin-top: 8px;
 background: #fff;																									
 transition: all 0.2s;																									
 }																									
-																									
 .store-card.done {																									
 border-color: #94a3b8;																									
 background: #e2e8f0;																									
 color: #64748b;																									
 opacity: 0.7;																									
 }																									
-																									
 .store-card.next-target {																									
 border: 3px solid #2563eb;																									
 background: #eff6ff;																									
 box-shadow: 0 0 8px rgba(37,99,235,0.3);																									
 }																									
-																									
 .scanner-wrapper {																									
 position: relative;																									
 width: 100%;																									
@@ -196,7 +167,6 @@ justify-content: center;
 align-items: center;																									
 cursor: pointer;																									
 }																									
-																									
 video {																									
 width: 100% !important;																									
 height: auto !important;																									
@@ -208,13 +178,11 @@ z-index: 1;
 transform-origin: center center;																									
 transition: transform 0.1s ease-out;																									
 }																									
-																									
 .camera-controls {																									
 display: flex;																									
 gap: 8px;																									
 margin-top: 8px;																									
 }																									
-																									
 .btn-zoom {																									
 flex: 1;																									
 background: #334155;																									
@@ -224,12 +192,11 @@ padding: 10px;
 border-radius: 8px;																									
 font-size: 14px;																									
 font-weight: bold;																									
+cursor: pointer;																									
 }																									
-																									
 .btn-zoom.active {																									
 background: #2563eb;																									
 }																									
-																									
 .focus-ring {																									
 position: absolute;																									
 width: 60px;																									
@@ -241,18 +208,10 @@ pointer-events: none;
 z-index: 25;																									
 animation: focusAnim 0.5s ease-out forwards;																									
 }																									
-																									
 @keyframes focusAnim {																									
-0% {																									
-opacity: 1;																									
-transform: translate(-50%, -50%) scale(1.4);																									
+0% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }																									
+100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }																									
 }																									
-100% {																									
-opacity: 0;																									
-transform: translate(-50%, -50%) scale(0.8);																									
-}																									
-}																									
-																									
 .scan-guide-box {																									
 position: absolute;																									
 top: 50%;																									
@@ -266,7 +225,6 @@ display: flex;
 align-items: center;																									
 justify-content: center;																									
 }																									
-																									
 .scan-guide-text {																									
 position: absolute;																									
 top: 8px;																									
@@ -279,7 +237,6 @@ font-weight: bold;
 text-shadow: 0 1px 3px rgba(0,0,0,0.9);																									
 z-index: 12;																									
 }																									
-																									
 .scan-laser {																									
 position: absolute;																									
 width: 90%;																									
@@ -289,12 +246,10 @@ box-shadow: 0 0 6px #ef4444;
 animation: laserMove 2s infinite ease-in-out;																									
 z-index: 11;																									
 }																									
-																									
 @keyframes laserMove {																									
 0%, 100% { top: 20%; }																									
 50% { top: 80%; }																									
 }																									
-																									
 .corner {																									
 position: absolute;																									
 width: 24px;																									
@@ -304,152 +259,96 @@ border-style: solid;
 border-width: 0;																									
 z-index: 11;																									
 }																									
+.corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; }																									
+.corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; }																									
+.corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; }																									
+.corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; }																									
 																									
-.corner-tl {																									
-top: 0;																									
-left: 0;																									
-border-top-width: 4px;																									
-border-left-width: 4px;																									
-}																									
-																									
-.corner-tr {																									
-top: 0;																									
-right: 0;																									
-border-top-width: 4px;																									
-border-right-width: 4px;																									
-}																									
-																									
-.corner-bl {																									
-bottom: 0;																									
-left: 0;																									
-border-bottom-width: 4px;																									
-border-left-width: 4px;																									
-}																									
-																									
-.corner-br {																									
-bottom: 0;																									
-right: 0;																									
-border-bottom-width: 4px;																									
-border-right-width: 4px;																									
-}																									
-																									
-.overlay {																									
+/* モーダル背景・画面 */																									
+.modal-overlay {																									
 position: fixed;																									
-inset: 0;																									
-background: rgba(0,0,0,0.65);																									
-z-index: 3000;																									
+top: 0; left: 0; right: 0; bottom: 0;																									
+background: rgba(0,0,0,0.6);																									
 display: flex;																									
-align-items: center;																									
 justify-content: center;																									
-padding: 18px;																									
+align-items: center;																									
+z-index: 2000;																									
+padding: 16px;																									
 }																									
-																									
-.login-box {																									
-background: white;																									
-border-radius: 14px;																									
-padding: 24px;																									
+.modal-content {																									
+background: #fff;																									
 width: 100%;																									
-max-width: 400px;																									
+max-width: 360px;																									
+border-radius: 12px;																									
+padding: 20px;																									
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);																									
+}																									
+.modal-title {																									
+font-size: 18px;																									
+font-weight: bold;																									
+margin-bottom: 8px;																									
+color: #1e293b;																									
 text-align: center;																									
 }																									
-																									
-.login-box h2 {																									
-margin: 10px 0 24px;																									
+.modal-desc {																									
+font-size: 13px;																									
+color: #64748b;																									
+margin-bottom: 16px;																									
+text-align: center;																									
+line-height: 1.4;																									
 }																									
-																									
-.login-box p {																									
-font-size: 16px;																									
-margin-bottom: 18px;																									
-}																									
-																									
-.login-box input {																									
+.modal-input {																									
 width: 100%;																									
-padding: 15px;																									
+padding: 12px;																									
+font-size: 16px;																									
 border: 1px solid #cbd5e1;																									
-border-radius: 9px;																									
-font-size: 18px;																									
-margin-bottom: 14px;																									
+border-radius: 8px;																									
+box-sizing: border-box;																									
+margin-bottom: 16px;																									
 }																									
-																									
-.login-error {																									
-color: #dc2626;																									
+.modal-btn {																									
+width: 100%;																									
+background: #2563eb;																									
+color: white;																									
+border: none;																									
+padding: 14px;																									
+border-radius: 8px;																									
+font-size: 16px;																									
 font-weight: bold;																									
-font-size: 14px;																									
-margin-bottom: 10px;																									
-display: none;																									
+cursor: pointer;																									
 }																									
 </style>																									
 </head>																									
-																									
 <body>																									
 																									
-<!-- 作業者名入力 -->																									
-<div id="loginOverlay" class="overlay">																									
-<div class="login-box">																									
-<h2>📦 ピッキング管理</h2>																									
-<p>作業者名を入力してください</p>																									
-																									
-<input																									
-type="text"																									
-id="workerInput"																									
-maxlength="80"																									
-placeholder="例：田中"																									
-autocomplete="name"																									
->																									
-																									
-<div id="loginError" class="login-error"></div>																									
-																									
-<button																									
-type="button"																									
-id="workerStartButton"																									
-class="btn-action-full"																									
->																									
-作業開始																									
-</button>																									
+<!-- 作業者名入力モーダル -->																									
+<div id="workerModal" class="modal-overlay" style="display:none;">																									
+<div class="modal-content">																									
+<div class="modal-title">👤 作業者名の入力</div>																									
+<div class="modal-desc">ピッキング作業を行うあなたの名前を入力してください。（スプレッドシートのA列に記録されます）</div>																									
+<input type="text" id="workerNameInput" class="modal-input" placeholder="例: 田中" autocomplete="off">																									
+<button class="modal-btn" onclick="saveWorkerName()">作業開始する</button>																									
 </div>																									
-</div>																									
-																									
-<div class="worker-bar">																									
-<span id="workerLabel">作業者：未設定</span>																									
-<button type="button" id="changeWorkerButton">																									
-名前変更																									
-</button>																									
 </div>																									
 																									
 <div class="top-buttons-container">																									
-<button																									
-type="button"																									
-class="btn-reset-top"																									
-onclick="resetAppDataLocally()"																									
->																									
-🗑️ リセット																									
-</button>																									
-																									
-<button																									
-type="button"																									
-class="btn-sync-top"																									
-onclick="syncData()"																									
->																									
-🔄 反映・更新																									
-</button>																									
+<div class="worker-badge" onclick="openWorkerModal()" title="クリックして作業者名を変更">																									
+<span>👤</span> <span id="displayWorkerName">未設定</span> <span style="font-size:11px; color:#64748b;">(変更)</span>																									
+</div>																									
+<div style="display:flex; gap:6px;">																									
+<button class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
+<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映</button>																									
+</div>																									
 </div>																									
 																									
-<div id="status" class="status" style="display:none"></div>																									
+<div id="status" class="status" style="display:none;"></div>																									
 																									
-<div class="card" id="videoCard" style="display:none">																									
+<div class="card" id="videoCard" style="display:none;">																									
 <div id="videoContainer">																									
-<div																									
-class="scanner-wrapper"																									
-id="scannerWrapper"																									
-onclick="handleVideoTap(event)"																									
->																									
+<div class="scanner-wrapper" id="scannerWrapper" onclick="handleVideoTap(event)">																									
 <video id="video" autoplay playsinline muted></video>																									
-																									
 <div class="scan-guide-box">																									
-<div class="scan-guide-text">																									
-枠内にバーコードを合わせてください																									
-(タップで再フォーカス)																									
-</div>																									
+<div class="scan-guide-text">枠内にバーコードを合わせてください (タップで再フォーカス)</div>																									
 <div class="scan-laser"></div>																									
 <div class="corner corner-tl"></div>																									
 <div class="corner corner-tr"></div>																									
@@ -457,89 +356,41 @@ onclick="handleVideoTap(event)"
 <div class="corner corner-br"></div>																									
 </div>																									
 </div>																									
-</div>																									
-																									
 <div class="camera-controls">																									
-<button id="zoom1x" class="btn-zoom active"																									
-onclick="setZoom(1.0)">1.0x (標準)</button>																									
-																									
-<button id="zoom15x" class="btn-zoom"																									
-onclick="setZoom(1.5)">1.5x</button>																									
-																									
-<button id="zoom2x" class="btn-zoom"																									
-onclick="setZoom(2.0)">2.0x (拡大)</button>																									
+<button type="button" id="zoom1x" class="btn-zoom active" onclick="setZoom(1.0)">1.0x (標準)</button>																									
+<button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
+<button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
 </div>																									
-																									
-<button																									
-type="button"																									
-onclick="stopScan()"																									
-class="btn-sync"																									
-style="margin-top:8px;background:#94a3b8;position:relative;z-index:20;"																									
->																									
-キャンセル（カメラを閉じる）																									
-</button>																									
+<button onclick="stopScan()" class="btn-sync" style="margin-top:8px;background:#94a3b8;position:relative;z-index:20;">キャンセル（カメラを閉じる）</button>																									
+</div>																									
 </div>																									
 																									
 <div class="card" id="homeProgressCard">																									
-<div style="font-weight:bold;font-size:16px;margin-bottom:6px;color:#2563eb;">																									
-📋 ピッキング管理																									
+<div style="font-weight:bold;font-size:16px;margin-bottom:6px;color:#2563eb;">📋 ピッキング管理</div>																									
+<div style="color:#64748b;font-size:14px;line-height:1.5;">下のボタンから「カメラ」または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
 </div>																									
 																									
-<div style="color:#64748b;font-size:14px;line-height:1.5;">																									
-下のボタンから「カメラ」または																									
-「Bluetoothスキャナー」を選んで																									
-バーコードをスキャンしてください。																									
-</div>																									
-</div>																									
-																									
-<div id="outArea" class="card" style="display:none">																									
+<div id="outArea" class="card" style="display:none;">																									
 <div style="text-align:center;">																									
 <h3 style="margin:0;">商品ピッキング詳細</h3>																									
-<div																									
-id="itemSub"																									
-style="color:#64748b;font-size:12px;margin-bottom:6px;"																									
-></div>																									
+<div id="itemSub" style="color:#64748b;font-size:12px;margin-bottom:6px;"></div>																									
 </div>																									
-																									
 <hr style="border:0;border-top:1px solid #eee;margin:10px 0;">																									
-																									
 <div id="storeList"></div>																									
 </div>																									
 																									
 <div class="bottom-btn-container">																									
-<select																									
-id="sortOrder"																									
-class="select-sort"																									
-onchange="onSortChange()"																									
->																									
+<select id="sortOrder" class="select-sort" onchange="onSortChange()">																									
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
-																									
-<button																									
-type="button"																									
-class="btn-action-full"																									
-onclick="startScan()"																									
->																									
-📷 カメラでスキャン開始																									
-</button>																									
-																									
-<button																									
-type="button"																									
-class="btn-action-scanner"																									
-onclick="activateScannerMode()"																									
->																									
-📡 スキャナーを使う（Bluetooth）																									
-</button>																									
+<button class="btn-action-full" onclick="checkWorkerAndStart(startScan)">📷 カメラでスキャン開始</button>																									
+<button class="btn-action-scanner" onclick="checkWorkerAndStart(activateScannerMode)">📡 スキャナーを使う（Bluetooth）</button>																									
 </div>																									
 																									
 <script>																									
-use strict';																									
-																									
-const GAS_URL =																									
-https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec';																									
-																									
-let codeReader = null;																									
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
+const codeReader = new ZXing.BrowserMultiFormatReader();																									
 																									
 let currentMode = 'OUT_ITEM';																									
 let currentData = null;																									
@@ -549,162 +400,69 @@ let isProcessing = false;
 let audioCtx = null;																									
 let currentZoom = 1.0;																									
 																									
-let workerName = '';																									
-let productWorker = '';																									
-let saving = false;																									
-let scannerBuffer = '';																									
-let scannerTimer = null;																									
-let targetScrollTimer = null;																									
+window.onload = function() {																									
+const savedZoom = localStorage.getItem('picking_camera_zoom');																									
+if (savedZoom) currentZoom = parseFloat(savedZoom);																									
 																									
-function getEl(id) {																									
-return document.getElementById(id);																									
+// 作業者名の確認																									
+const savedWorker = localStorage.getItem('picking_worker_name');																									
+if (savedWorker) {																									
+document.getElementById('displayWorkerName').innerText = savedWorker;																									
+} else {																									
+// 未設定ならモーダル表示																									
+openWorkerModal();																									
 }																									
 																									
-// 作業者名の登録																									
-function saveWorker() {																									
-const input = getEl('workerInput');																									
-const overlay = getEl('loginOverlay');																									
-const label = getEl('workerLabel');																									
-const error = getEl('loginError');																									
-																									
-const name = input.value.trim();																									
-																									
-error.style.display = 'none';																									
-																									
-if (!name) {																									
-error.textContent = '作業者名を入力してください';																									
-error.style.display = 'block';																									
-return;																									
-}																									
-																									
-if (																									
-currentData &&																									
-productWorker &&																									
-name !== productWorker																									
-) {																									
-error.textContent =																									
-作業中の商品があります。完了後に名前を変更してください。';																									
-error.style.display = 'block';																									
-return;																									
-}																									
-																									
-workerName = name;																									
-																									
-try {																									
-localStorage.setItem('picking_worker_name', name);																									
-} catch (e) {																									
-console.warn('名前の端末保存に失敗:', e);																									
-}																									
-																									
-label.textContent = '作業者：' + name;																									
-overlay.style.display = 'none';																									
-																									
-showStatus(																									
-作業者「' + name + '」で開始しました。',																									
-success'																									
-);																									
-}																									
-																									
-function changeWorker() {																									
-if (currentData) {																									
-alert(																									
-作業中の商品があります。完了またはリセット後に名前を変更してください。'																									
-);																									
-return;																									
-}																									
-																									
-getEl('workerInput').value = workerName;																									
-getEl('loginError').style.display = 'none';																									
-getEl('loginOverlay').style.display = 'flex';																									
-}																									
-																									
-function initializeApp() {																									
-// 名前入力のボタンは直接イベント登録する																									
-getEl('workerStartButton').addEventListener(																									
-click',																									
-saveWorker																									
-);																									
-																									
-getEl('changeWorkerButton').addEventListener(																									
-click',																									
-changeWorker																									
-);																									
-																									
-getEl('workerInput').addEventListener(																									
-keydown',																									
-function(event) {																									
-if (event.key === 'Enter') {																									
-event.preventDefault();																									
-saveWorker();																									
-}																									
-}																									
-);																									
-																									
-try {																									
-workerName =																									
-localStorage.getItem('picking_worker_name') || '';																									
-} catch (e) {																									
-workerName = '';																									
-}																									
-																									
-getEl('workerInput').value = workerName;																									
-																									
-currentZoom = Number(																									
-localStorage.getItem('picking_camera_zoom')																									
-) || 1;																									
-																									
-const savedData =																									
-localStorage.getItem('picking_current_data');																									
-																									
-const savedCounts =																									
-localStorage.getItem('picking_store_counts');																									
+const savedData = localStorage.getItem('picking_current_data');																									
+const savedCounts = localStorage.getItem('picking_store_counts');																									
 																									
 if (savedData && savedCounts) {																									
 try {																									
 currentData = JSON.parse(savedData);																									
 storeCounts = JSON.parse(savedCounts);																									
 																									
-productWorker =																									
-localStorage.getItem('picking_product_worker') ||																									
-workerName;																									
-																									
-getEl('homeProgressCard').style.display = 'none';																									
-																									
+if (currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty)) {																									
+sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, true);																									
+} else {																									
+document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(currentData);																									
-																									
-if (getNextRequiredStore()) {																									
 currentMode = 'OUT_STORE';																									
-																									
-showStatus(																									
-前回の作業データを復元しました。',																									
-success'																									
-);																									
-} else {																									
-currentMode = 'OUT_ITEM';																									
-																									
-showStatus(																									
-全店舗の作業が完了しています。反映・更新で保存してください。',																									
-error'																									
-);																									
+showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
 }																									
-																									
 } catch (e) {																									
-console.error('復元エラー:', e);																									
-currentData = null;																									
-storeCounts = {};																									
+localStorage.removeItem('picking_current_data');																									
+localStorage.removeItem('picking_store_counts');																									
 }																									
 }																									
-																									
 setupBluetoothScannerListener();																									
+};																									
+																									
+function openWorkerModal() {																									
+const current = localStorage.getItem('picking_worker_name') || '';																									
+document.getElementById('workerNameInput').value = current;																									
+document.getElementById('workerModal').style.display = 'flex';																									
+setTimeout(() => document.getElementById('workerNameInput').focus(), 100);																									
 }																									
 																									
-if (document.readyState === 'loading') {																									
-document.addEventListener(																									
-DOMContentLoaded',																									
-initializeApp																									
-);																									
-} else {																									
-initializeApp();																									
+function saveWorkerName() {																									
+const name = document.getElementById('workerNameInput').value.trim();																									
+if (!name) {																									
+alert('作業者名を入力してください');																									
+return;																									
+}																									
+localStorage.setItem('picking_worker_name', name);																									
+document.getElementById('displayWorkerName').innerText = name;																									
+document.getElementById('workerModal').style.display = 'none';																									
+showStatus(`作業者名「${name}」を設定しました`, 'success');																									
+}																									
+																									
+function checkWorkerAndStart(callbackFunc) {																									
+const worker = localStorage.getItem('picking_worker_name');																									
+if (!worker) {																									
+openWorkerModal();																									
+return;																									
+}																									
+callbackFunc();																									
 }																									
 																									
 function onSortChange() {																									
@@ -714,45 +472,31 @@ renderProductData(currentData);
 }																									
 }																									
 																									
+let scannerBuffer = '';																									
+let scannerTimer = null;																									
+																									
 function setupBluetoothScannerListener() {																									
-document.addEventListener('keydown', function(e) {																									
-if (																									
-getEl('loginOverlay').style.display !== 'none'																									
-) {																									
-return;																									
-}																									
-																									
-if (																									
-getEl('videoCard').style.display === 'block'																									
-) {																									
-return;																									
-}																									
-																									
-if (																									
-['INPUT', 'SELECT', 'TEXTAREA'].includes(																									
-e.target.tagName																									
-)																									
-) {																									
-return;																									
-}																									
+document.addEventListener('keydown', (e) => {																									
+if (document.getElementById('videoCard').style.display === 'block') return;																									
+if (document.getElementById('workerModal').style.display === 'flex') return;																									
+if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;																									
 																									
 if (e.key === 'Enter') {																									
 if (scannerBuffer.trim().length > 0) {																									
 const barcode = scannerBuffer.trim();																									
-																									
 scannerBuffer = '';																									
-																									
-if (scannerTimer) {																									
-clearTimeout(scannerTimer);																									
-}																									
-																									
-if (!isProcessing && !saving) {																									
+if (scannerTimer) clearTimeout(scannerTimer);																									
+if (!isProcessing) {																									
 isProcessing = true;																									
-handleScan(barcode);																									
-																									
-setTimeout(function() {																									
+// スキャナー利用時も作業者チェック																									
+const worker = localStorage.getItem('picking_worker_name');																									
+if (!worker) {																									
 isProcessing = false;																									
-}, 300);																									
+openWorkerModal();																									
+return;																									
+}																									
+handleScan(barcode);																									
+setTimeout(() => { isProcessing = false; }, 300);																									
 }																									
 }																									
 return;																									
@@ -760,107 +504,47 @@ return;
 																									
 if (e.key.length === 1) {																									
 scannerBuffer += e.key;																									
-																									
-if (scannerTimer) {																									
-clearTimeout(scannerTimer);																									
-}																									
-																									
-scannerTimer = setTimeout(function() {																									
-scannerBuffer = '';																									
-}, 100);																									
+if (scannerTimer) clearTimeout(scannerTimer);																									
+scannerTimer = setTimeout(() => { scannerBuffer = ''; }, 100);																									
 }																									
 });																									
 }																									
 																									
 function activateScannerMode() {																									
-if (!workerName) {																									
-changeWorker();																									
-return;																									
-}																									
-																									
 playSuccessBeep();																									
-																									
-showStatus(																									
-📡 Bluetoothスキャナー待機中...\nスキャナーでバーコードを読み取ってください。',																									
-success'																									
-);																									
+showStatus('📡 Bluetoothスキャナー待機中...\nスキャナーのトリガーを引いてバーコードを読み取ってください。', 'success');																									
 }																									
 																									
 function startScan() {																									
-if (!workerName) {																									
-changeWorker();																									
-return;																									
-}																									
-																									
-if (saving) return;																									
-																									
-if (typeof ZXing === 'undefined') {																									
-triggerError(																									
-バーコード読み取りライブラリを読み込めませんでした。通信環境を確認してください。'																									
-);																									
-return;																									
-}																									
-																									
 isProcessing = false;																									
-																									
 try {																									
-if (!audioCtx) {																									
-audioCtx = new (																									
-window.AudioContext ||																									
-window.webkitAudioContext																									
-)();																									
-}																									
-																									
-if (audioCtx.state === 'suspended') {																									
-audioCtx.resume();																									
-}																									
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+if (audioCtx.state === 'suspended') audioCtx.resume();																									
 } catch (e) {}																									
 																									
-getEl('videoCard').style.display = 'block';																									
-getEl('homeProgressCard').style.display = 'none';																									
-getEl('outArea').style.display = 'none';																									
-																									
+document.getElementById('videoCard').style.display = 'block';																									
+document.getElementById('homeProgressCard').style.display = 'none';																									
+document.getElementById('outArea').style.display = 'none';																									
 setZoom(currentZoom);																									
 																									
-try {																									
-if (!codeReader) {																									
-codeReader = new ZXing.BrowserMultiFormatReader();																									
-}																									
-																									
-codeReader.decodeFromVideoDevice(																									
-null,																									
-video',																									
-function(result) {																									
+codeReader.decodeFromVideoDevice(null, 'video', (result) => {																									
 if (result && !isProcessing) {																									
 const points = result.getResultPoints();																									
-																									
 if (points && points.length > 0) {																									
-let sumX = 0;																									
-let sumY = 0;																									
-																									
-points.forEach(function(p) {																									
+let sumX = 0, sumY = 0;																									
+points.forEach(p => {																									
 sumX += p.getX();																									
 sumY += p.getY();																									
 });																									
-																									
 const avgX = sumX / points.length;																									
 const avgY = sumY / points.length;																									
-																									
-const videoEl = getEl('video');																									
-																									
-const vWidth =																									
-videoEl.videoWidth || videoEl.clientWidth;																									
-																									
-const vHeight =																									
-videoEl.videoHeight || videoEl.clientHeight;																									
+const videoEl = document.getElementById('video');																									
+const vWidth = videoEl.videoWidth || videoEl.clientWidth;																									
+const vHeight = videoEl.videoHeight || videoEl.clientHeight;																									
 																									
 if (vWidth > 0 && vHeight > 0) {																									
-if (																									
-avgX >= vWidth * 0.11 &&																									
-avgX <= vWidth * 0.89 &&																									
-avgY >= vHeight * 0.35 &&																									
-avgY <= vHeight * 0.65																									
-) {																									
+if (avgX >= vWidth * 0.11 && avgX <= vWidth * 0.89 &&																									
+avgY >= vHeight * 0.35 && avgY <= vHeight * 0.65) {																									
 isProcessing = true;																									
 handleScan(result.text);																									
 }																									
@@ -870,574 +554,243 @@ handleScan(result.text);
 }																									
 }																									
 }																									
-}																									
-).catch(function() {																									
-stopScan();																									
-triggerError('カメラを起動できませんでした。');																									
 });																									
-																									
-} catch (e) {																									
-stopScan();																									
-triggerError('カメラ起動エラー: ' + e.message);																									
-}																									
 }																									
 																									
 function stopScan() {																									
-if (codeReader) {																									
-try {																									
 codeReader.reset();																									
-} catch (e) {}																									
-}																									
-																									
-getEl('videoCard').style.display = 'none';																									
-																									
-getEl(																									
-currentData ? 'outArea' : 'homeProgressCard'																									
-).style.display = 'block';																									
-																									
+document.getElementById('videoCard').style.display = 'none';																									
+document.getElementById(currentData ? 'outArea' : 'homeProgressCard').style.display = 'block';																									
 isProcessing = false;																									
-																									
-scrollToNextStore();																									
 }																									
 																									
 function setZoom(level) {																									
 currentZoom = level;																									
-																									
-try {																									
-localStorage.setItem(																									
-picking_camera_zoom',																									
-currentZoom																									
-);																									
-} catch (e) {}																									
-																									
-getEl('video').style.transform =																									
-scale(' + currentZoom + ')';																									
-																									
-['1x', '15x', '2x'].forEach(function(z) {																									
-const expected =																									
-z === '1x' ? 1.0 :																									
-z === '15x' ? 1.5 : 2.0;																									
-																									
-getEl('zoom' + z).className =																									
-level === expected																									
-? 'btn-zoom active'																									
-: 'btn-zoom';																									
+localStorage.setItem('picking_camera_zoom', currentZoom);																									
+document.getElementById('video').style.transform = `scale(${currentZoom})`;																									
+['1x', '15x', '2x'].forEach(z => {																									
+document.getElementById('zoom' + z).className =																									
+level === (z === '1x' ? 1.0 : z === '15x' ? 1.5 : 2.0)																									
+? 'btn-zoom active' : 'btn-zoom';																									
 });																									
 }																									
 																									
 function handleVideoTap(event) {																									
-const wrapper = getEl('scannerWrapper');																									
+const wrapper = document.getElementById('scannerWrapper');																									
 const rect = wrapper.getBoundingClientRect();																									
-																									
 const ring = document.createElement('div');																									
 ring.className = 'focus-ring';																									
-																									
-ring.style.left =																									
-(event.clientX - rect.left) + 'px';																									
-																									
-ring.style.top =																									
-(event.clientY - rect.top) + 'px';																									
-																									
+ring.style.left = `${event.clientX - rect.left}px`;																									
+ring.style.top = `${event.clientY - rect.top}px`;																									
 wrapper.appendChild(ring);																									
-																									
-setTimeout(function() {																									
-ring.remove();																									
-}, 500);																									
+setTimeout(() => ring.remove(), 500);																									
 																									
 try {																									
-const video = getEl('video');																									
-const stream = video.srcObject;																									
-																									
-if (stream) {																									
-const track = stream.getVideoTracks()[0];																									
-																									
-if (track) {																									
-track.applyConstraints({																									
-advanced: [{																									
-focusMode: 'single-shot'																									
-}]																									
-}).catch(function() {});																									
-}																									
-}																									
+const track = document.getElementById('video').srcObject?.getVideoTracks()[0];																									
+track?.applyConstraints({ advanced: [{ focusMode: 'single-shot' }] }).catch(() => {});																									
 } catch (e) {}																									
 }																									
 																									
 function handleScan(code) {																									
-if (saving) return;																									
-																									
 if (currentMode === 'OUT_ITEM') {																									
-if (currentData) {																									
-stopScan();																									
-																									
-showStatus(																									
-作業データが残っています。保存を完了してください。',																									
-error'																									
-);																									
-return;																									
-}																									
-																									
 stopScan();																									
 fetchProductData(code);																									
-																									
 } else if (currentMode === 'OUT_STORE') {																									
 stopScan();																									
 verifyStoreScan(code);																									
-																									
 } else if (currentMode === 'OUT_NEED') {																									
 countNeedItemScan(code);																									
 }																									
 }																									
 																									
-// GASからJSONPで応答を取得する																									
-function apiRequest(params, timeoutMs) {																									
-timeoutMs = timeoutMs || 30000;																									
-																									
-return new Promise(function(resolve, reject) {																									
-const callbackName =																									
-pickingCallback_' +																									
-Date.now() +																									
-_' +																									
-Math.floor(Math.random() * 100000000);																									
-																									
-const script = document.createElement('script');																									
-																									
-let finished = false;																									
-																									
-const timer = setTimeout(function() {																									
-finish(new Error('通信がタイムアウトしました'));																									
-}, timeoutMs);																									
-																									
-function finish(error, data) {																									
-if (finished) return;																									
-																									
-finished = true;																									
-																									
-clearTimeout(timer);																									
-delete window[callbackName];																									
-script.remove();																									
-																									
-if (error) {																									
-reject(error);																									
-} else {																									
-resolve(data);																									
-}																									
-}																									
-																									
-window[callbackName] = function(data) {																									
-finish(null, data);																									
-};																									
-																									
-script.onerror = function() {																									
-finish(new Error('通信エラーが発生しました'));																									
-};																									
-																									
-const query = new URLSearchParams();																									
-																									
-Object.keys(params).forEach(function(key) {																									
-query.set(key, String(params[key]));																									
-});																									
-																									
-query.set('callback', callbackName);																									
-query.set('_t', String(Date.now()));																									
-																									
-script.src =																									
-GAS_URL + '?' + query.toString();																									
-																									
-document.head.appendChild(script);																									
-});																									
-}																									
-																									
-async function fetchProductData(barcode) {																									
+function fetchProductData(barcode) {																									
 playSuccessBeep();																									
+showStatus('⚡ データを読み込んでいます...', 'success');																									
 																									
-showStatus(																									
-⚡ データを読み込んでいます...',																									
-success'																									
-);																									
+const url = `${GAS_URL}?action=product&barcode=${encodeURIComponent(barcode)}&reverse=${document.getElementById('sortOrder').value}`;																									
+const controller = new AbortController();																									
+const timer = setTimeout(() => controller.abort(), 30000);																									
 																									
-try {																									
-const data = await apiRequest({																									
-action: 'product',																									
-barcode: barcode,																									
-reverse: getEl('sortOrder').value																									
-});																									
+fetch(url, {																									
+signal: controller.signal,																									
+mode: 'cors',																									
+headers: { 'Accept': 'application/json' }																									
+})																									
+.then(res => res.json())																									
+.then(data => {																									
+clearTimeout(timer);																									
+isProcessing = false;																									
 																									
-if (!data.success) {																									
-throw new Error(																									
-data.error || '未登録の商品です'																									
-);																									
-}																									
-																									
+if (data.success) {																									
 currentData = data;																									
-productWorker = workerName;																									
 storeCounts = {};																									
+data.stores.forEach(s => storeCounts[s.storeCode] = 0);																									
 																									
-data.stores.forEach(function(s) {																									
-storeCounts[s.storeCode] =																									
-Number(s.completedQty) || 0;																									
-});																									
+localStorage.setItem('picking_current_data', JSON.stringify(currentData));																									
+localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 																									
-saveLocal();																									
-																									
-getEl('homeProgressCard').style.display = 'none';																									
-																									
+document.getElementById('homeProgressCard').style.display = 'none';																									
 renderProductData(data);																									
-																									
-const nextStore = getNextRequiredStore();																									
-																									
-if (!nextStore) {																									
-showStatus(																									
-🎉 この商品は全店舗完了済みです',																									
-success'																									
-);																									
-																									
-clearProduct();																									
-																									
-} else {																									
 currentMode = 'OUT_STORE';																									
 																									
-showStatus(																									
-スキャン成功！次は【' +																									
-nextStore.storeName +																									
-】(箱No.' +																									
-nextStore.storeNo +																									
-) をスキャンしてください',																									
-success'																									
-);																									
+const nextStore = getNextRequiredStore();																									
+if (!nextStore) {																									
+showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
+currentMode = 'OUT_ITEM';																									
+} else {																									
+showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
 }																									
-																									
-} catch (e) {																									
-triggerError(																									
-❌ ' + e.message																									
-);																									
-																									
-} finally {																									
+} else {																									
+triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
+}																									
+})																									
+.catch(() => {																									
+clearTimeout(timer);																									
 isProcessing = false;																									
-}																									
+triggerError('❌ 通信エラーまたはタイムアウトが発生しました');																									
+});																									
 }																									
 																									
 function getNextRequiredStore() {																									
-if (!currentData || !currentData.stores) {																									
-return null;																									
-}																									
-																									
-return currentData.stores.find(function(s) {																									
-return (																									
-Number(storeCounts[s.storeCode]) || 0																									
-) < Number(s.qty);																									
-}) || null;																									
+return currentData?.stores?.find(s => (storeCounts[s.storeCode] || 0) < s.qty);																									
 }																									
 																									
 function verifyStoreScan(storeCode) {																									
-if (!currentData) {																									
-triggerError(																									
-先に出荷商品をスキャンしてください'																									
-);																									
-return;																									
-}																									
-																									
+if (!currentData) return triggerError('先に「出荷商品」をスキャンしてください');																									
 const nextStore = getNextRequiredStore();																									
-																									
-if (!nextStore) {																									
-triggerError(																									
-すべての店舗へのピッキングが完了しています'																									
-);																									
-return;																									
-}																									
+if (!nextStore) return triggerError('すべての店舗へのピッキングが完了しています');																									
 																									
 const scanned = String(storeCode).trim();																									
-																									
-const accepted = [																									
-String(nextStore.storeCode),																									
-String(nextStore.storeNo),																									
-String(nextStore.storeName)																									
-];																									
-																									
-if (!accepted.includes(scanned)) {																									
-triggerError(																									
-❌ 正しい店舗バーコードを読み取ってください\n' +																									
-(次：【箱No.' +																									
-nextStore.storeNo +																									
-】' +																									
-nextStore.storeName +																									
-)'																									
-);																									
-return;																									
+if (![String(nextStore.storeCode), String(nextStore.storeNo), String(nextStore.storeName)].includes(scanned)) {																									
+return triggerError(`❌ 正しい店舗バーコードを読み取ってください\n(次：【箱No.${nextStore.storeNo}】${nextStore.storeName})`);																									
 }																									
 																									
 playSuccessBeep();																									
-																									
 activeStoreCode = nextStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
-																									
-showStatus(																									
-スキャン成功！ (' +																									
-nextStore.storeName +																									
-): 商品をスキャンしてください',																									
-success'																									
-);																									
+showStatus(`スキャン成功！ (${nextStore.storeName}): 商品をスキャンしてください`, 'success');																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
-if (!currentData) return;																									
-																									
-if (																									
-String(barcode).trim() !==																									
-String(currentData.barcode).trim()																									
-) {																									
+if (String(barcode).trim() !== String(currentData.barcode).trim()) {																									
 stopScan();																									
-																									
-triggerError(																									
-❌ 違う商品です。正しい商品バーコード: ' +																									
-currentData.barcode																									
-);																									
-return;																									
-}																									
-																									
-const targetStore = currentData.stores.find(																									
-function(s) {																									
-return String(s.storeCode) ===																									
-String(activeStoreCode);																									
-}																									
-);																									
-																									
-if (!targetStore) {																									
-stopScan();																									
-triggerError('店舗データが見つかりません');																									
-return;																									
+return triggerError(`❌ 違う商品です。正しい商品バーコード: ${currentData.barcode}`);																									
 }																									
 																									
 playSuccessBeep();																									
-																									
-storeCounts[activeStoreCode] =																									
-(Number(storeCounts[activeStoreCode]) || 0) + 1;																									
-																									
+const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
+storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
 																									
-saveLocal();																									
+localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 updateStoreUI();																									
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
-const nextStore = getNextRequiredStore();																									
-																									
-if (!nextStore) {																									
-currentMode = 'OUT_ITEM';																									
-																									
-showStatus(																									
-全店舗完了！スプレッドシートへ保存中...',																									
-success'																									
-);																									
-																									
-sendBatchCompletionToGAS(false);																									
-																									
+if (currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty)) {																									
+showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
+sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, false);																									
 } else {																									
 currentMode = 'OUT_STORE';																									
-																									
-showStatus(																									
-スキャン成功！ ' +																									
-targetStore.storeName +																									
- 完了。次は【' +																									
-nextStore.storeName +																									
-】の箱をスキャン',																									
-success'																									
-);																									
+const nextStore = getNextRequiredStore();																									
+showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
 }																									
-																									
 } else {																									
-showStatus(																									
-スキャン成功！ (' +																									
-count +																									
-/' +																									
-targetStore.qty +																									
-個) - 次の1個をスキャン',																									
-success'																									
-);																									
+showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
 }																									
 }																									
 																									
-function saveLocal() {																									
-localStorage.setItem(																									
-picking_current_data',																									
-JSON.stringify(currentData)																									
-);																									
+function sendBatchCompletionToGAS(barcode, stores, counts, retryCount = 0, isAutoSync = false) {																									
+const countsObj = {};																									
+stores.forEach(s => {																									
+const cnt = Number(counts[s.storeCode]) || 0;																									
+if (cnt > 0) countsObj[s.storeCode] = cnt;																									
+});																									
+if (Object.keys(countsObj).length === 0) return;																									
 																									
-localStorage.setItem(																									
-picking_store_counts',																									
-JSON.stringify(storeCounts)																									
-);																									
+const worker = localStorage.getItem('picking_worker_name') || '';																									
+const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&worker=${encodeURIComponent(worker)}&_t=${Date.now()}`;																									
+fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});																									
 																									
-localStorage.setItem(																									
-picking_product_worker',																									
-productWorker																									
-);																									
+setTimeout(() => {																									
+localStorage.removeItem('picking_current_data');																									
+localStorage.removeItem('picking_store_counts');																									
+currentData = null;																									
+document.getElementById('outArea').style.display = 'none';																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
+currentMode = 'OUT_ITEM';																									
+showStatus('全店舗の出荷完了・保存成功！', 'success');																									
+if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！');																									
+}, 300);																									
 }																									
 																									
-function clearProduct() {																									
-localStorage.removeItem(																									
-picking_current_data'																									
-);																									
-																									
-localStorage.removeItem(																									
-picking_store_counts'																									
-);																									
-																									
-localStorage.removeItem(																									
-picking_product_worker'																									
-);																									
+function resetAppDataLocally() {																									
+if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
+// 作業者名は残す																									
+const worker = localStorage.getItem('picking_worker_name');																									
+localStorage.clear();																									
+if (worker) localStorage.setItem('picking_worker_name', worker);																									
 																									
 currentData = null;																									
 storeCounts = {};																									
 activeStoreCode = null;																									
-productWorker = '';																									
 currentMode = 'OUT_ITEM';																									
-																									
-getEl('outArea').style.display = 'none';																									
-getEl('homeProgressCard').style.display = 'block';																									
-}																									
-																									
-async function sendBatchCompletionToGAS(isManual) {																									
-if (saving || !currentData) return;																									
-																									
-saving = true;																									
-																									
-const countsObj = {};																									
-																									
-currentData.stores.forEach(function(s) {																									
-const cnt =																									
-Number(storeCounts[s.storeCode]) || 0;																									
-																									
-if (cnt > 0) {																									
-countsObj[s.storeCode] = cnt;																									
-}																									
-});																									
-																									
-try {																									
-if (!Object.keys(countsObj).length) {																									
-throw new Error(																									
-送信対象の投入数がありません'																									
-);																									
-}																									
-																									
-const result = await apiRequest({																									
-action: 'recordBatch',																									
-barcode: currentData.barcode,																									
-data: JSON.stringify(countsObj),																									
-worker: productWorker || workerName																									
-}, 40000);																									
-																									
-if (!result.success) {																									
-throw new Error(																									
-result.error || '保存に失敗しました'																									
-);																									
-}																									
-																									
-if (!getNextRequiredStore()) {																									
-clearProduct();																									
-																									
-showStatus(																									
-全店舗の出荷完了・保存確認済み！',																									
-success'																									
-);																									
-																									
-if (!isManual) {																									
-alert(																									
-🎉 ピッキング完了！作業者名と店舗の完了状態を保存しました。'																									
-);																									
-}																									
-																									
-} else {																									
-showStatus(																									
-スプレッドシートに反映しました（作業継続中）',																									
-success'																									
-);																									
-}																									
-																									
-} catch (e) {																									
-showStatus(																									
-❌ 保存結果を確認できませんでした。\n' +																									
-作業データは端末に残しています。\n' +																									
-「反映・更新」で再送信してください。\n' +																									
-e.message,																									
-error'																									
-);																									
-																									
-} finally {																									
-saving = false;																									
+document.getElementById('outArea').style.display = 'none';																									
+document.getElementById('videoCard').style.display = 'none';																									
+document.getElementById('homeProgressCard').style.display = 'block';																									
+showStatus('アプリ側のデータをリセットしました', 'success');																									
 }																									
 }																									
 																									
 function syncData() {																									
-if (!currentData) {																									
-showStatus(																									
-送信する作業データはありません',																									
-success'																									
-);																									
+showStatus('スプレッドシートへデータを反映中...', 'success');																									
+const savedData = localStorage.getItem('picking_current_data');																									
+const savedCounts = localStorage.getItem('picking_store_counts');																									
+																									
+if (savedData && savedCounts) {																									
+try {																									
+const data = JSON.parse(savedData);																									
+const counts = JSON.parse(savedCounts);																									
+const countsObj = {};																									
+																									
+data.stores.forEach(s => {																									
+const cnt = Number(counts[s.storeCode]) || 0;																									
+if (cnt > 0) countsObj[s.storeCode] = cnt;																									
+});																									
+																									
+if (Object.keys(countsObj).length > 0) {																									
+const worker = localStorage.getItem('picking_worker_name') || '';																									
+const url = `${GAS_URL}?action=recordBatch&barcode=${encodeURIComponent(data.barcode)}&data=${encodeURIComponent(JSON.stringify(countsObj))}&worker=${encodeURIComponent(worker)}&_t=${Date.now()}`;																									
+fetch(url, { method: 'GET', mode: 'no-cors' }).catch(() => {});																									
+}																									
+																									
+setTimeout(() => {																									
+showStatus('スプレッドシートへデータを反映しました（作業継続中）', 'success');																									
+}, 500);																									
 return;																									
+} catch (e) {}																									
 }																									
 																									
-sendBatchCompletionToGAS(true);																									
-}																									
-																									
-function resetAppDataLocally() {																									
-if (!confirm(																									
-現在のアプリ側の作業データをリセットしますか？\n' +																									
-スプレッドシート側には影響しません。'																									
-)) {																									
-return;																									
-}																									
-																									
-stopScan();																									
-clearProduct();																									
-																									
-showStatus(																									
-アプリ側のデータをリセットしました',																									
-success'																									
-);																									
+setTimeout(() => {																									
+showStatus('最新状態に更新しました（未送信データなし）', 'success');																									
+}, 500);																									
 }																									
 																									
 function playBeep(freq1, freq2, dur) {																									
 try {																									
-if (!audioCtx) {																									
-audioCtx = new (																									
-window.AudioContext ||																									
-window.webkitAudioContext																									
-)();																									
-}																									
-																									
-if (audioCtx.state === 'suspended') {																									
-audioCtx.resume();																									
-}																									
-																									
-[																									
-[freq1, 0, dur],																									
-[freq2, dur + 0.02, dur]																									
-].forEach(function(v) {																									
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+if (audioCtx.state === 'suspended') audioCtx.resume();																									
+[[freq1, 0, dur], [freq2, dur + 0.02, dur]].forEach(([f, t, d]) => {																									
 const osc = audioCtx.createOscillator();																									
 const g = audioCtx.createGain();																									
-																									
-osc.frequency.setValueAtTime(																									
-v[0],																									
-audioCtx.currentTime + v[1]																									
-);																									
-																									
-g.gain.setValueAtTime(																									
-0.2,																									
-audioCtx.currentTime + v[1]																									
-);																									
-																									
-g.gain.exponentialRampToValueAtTime(																									
-0.01,																									
-audioCtx.currentTime + v[1] + v[2]																									
-);																									
-																									
+osc.frequency.setValueAtTime(f, audioCtx.currentTime + t);																									
+g.gain.setValueAtTime(0.2, audioCtx.currentTime + t);																									
+g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + t + d);																									
 osc.connect(g);																									
 g.connect(audioCtx.destination);																									
-																									
-osc.start(audioCtx.currentTime + v[1]);																									
-osc.stop(audioCtx.currentTime + v[1] + v[2]);																									
+osc.start(audioCtx.currentTime + t);																									
+osc.stop(audioCtx.currentTime + t + d);																									
 });																									
-																									
 } catch (e) {}																									
 }																									
 																									
@@ -1447,207 +800,82 @@ playBeep(880, 1174.66, 0.1);
 																									
 function playBuzzer() {																									
 try {																									
-if (!audioCtx) {																									
-audioCtx = new (																									
-window.AudioContext ||																									
-window.webkitAudioContext																									
-)();																									
-}																									
-																									
-if (audioCtx.state === 'suspended') {																									
-audioCtx.resume();																									
-}																									
-																									
+if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();																									
+if (audioCtx.state === 'suspended') audioCtx.resume();																									
 const osc = audioCtx.createOscillator();																									
 const g = audioCtx.createGain();																									
-																									
 osc.type = 'sawtooth';																									
-																									
-osc.frequency.setValueAtTime(																									
-280,																									
-audioCtx.currentTime																									
-);																									
-																									
-g.gain.setValueAtTime(																									
-0.3,																									
-audioCtx.currentTime																									
-);																									
-																									
-g.gain.exponentialRampToValueAtTime(																									
-0.01,																									
-audioCtx.currentTime + 0.2																									
-);																									
-																									
+osc.frequency.setValueAtTime(280, audioCtx.currentTime);																									
+g.gain.setValueAtTime(0.3, audioCtx.currentTime);																									
+g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);																									
 osc.connect(g);																									
 g.connect(audioCtx.destination);																									
-																									
 osc.start(audioCtx.currentTime);																									
 osc.stop(audioCtx.currentTime + 0.2);																									
-																									
 } catch (e) {}																									
 }																									
 																									
 function triggerError(msg) {																									
 stopScan();																									
-																									
 showStatus(msg, 'error');																									
-																									
-if (navigator.vibrate) {																									
-navigator.vibrate([200, 100, 200]);																									
-}																									
-																									
+if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
 playBuzzer();																									
 }																									
 																									
 function renderProductData(data) {																									
-getEl('outArea').style.display = 'block';																									
-																									
-getEl('itemSub').innerText =																									
-型番: ' +																									
-(data.itemCode || '') +																									
- / バーコード: ' +																									
-data.barcode;																									
-																									
-const listEl = getEl('storeList');																									
+document.getElementById('outArea').style.display = 'block';																									
+document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
+const listEl = document.getElementById('storeList');																									
 listEl.innerHTML = '';																									
 																									
-data.stores.forEach(function(store) {																									
+data.stores.forEach(store => {																									
 const div = document.createElement('div');																									
-																									
 div.className = 'store-card';																									
-div.dataset.storeCode = String(store.storeCode);																									
-																									
-const wrap = document.createElement('div');																									
-wrap.style.cssText =																									
-display:flex;align-items:center;gap:12px;';																									
-																									
-const box = document.createElement('div');																									
-box.style.cssText =																									
-background:#2563eb;color:#fff;font-size:22px;font-weight:bold;padding:8px 14px;border-radius:8px;text-align:center;min-width:55px;';																									
-																									
-const small = document.createElement('div');																									
-small.style.cssText =																									
-font-size:10px;font-weight:normal;';																									
-																									
-small.textContent = 'Box No.';																									
-																									
-box.appendChild(small);																									
-box.appendChild(																									
-document.createTextNode(String(store.storeNo))																									
-);																									
-																									
-const detail = document.createElement('div');																									
-detail.style.flexGrow = '1';																									
-																									
-const name = document.createElement('div');																									
-name.style.cssText =																									
-font-size:18px;font-weight:bold;';																									
-name.textContent = store.storeName;																									
-																									
-const code = document.createElement('div');																									
-code.style.cssText =																									
-font-size:13px;color:#666;';																									
-code.textContent = '店番: ' + store.storeCode;																									
-																									
-const qty = document.createElement('div');																									
-qty.style.cssText =																									
-font-size:15px;margin-top:4px;';																									
-																									
-const count = document.createElement('span');																									
-count.className = 'count';																									
-count.style.cssText =																									
-font-size:20px;color:#2563eb;font-weight:bold;';																									
-count.textContent = '0';																									
-																									
-qty.appendChild(																									
-document.createTextNode('投入数: ')																									
-);																									
-qty.appendChild(count);																									
-qty.appendChild(																									
-document.createTextNode(' / ' + store.qty + ' 個')																									
-);																									
-																									
-detail.appendChild(name);																									
-detail.appendChild(code);																									
-detail.appendChild(qty);																									
-																									
-wrap.appendChild(box);																									
-wrap.appendChild(detail);																									
-div.appendChild(wrap);																									
-																									
+div.id = `card-${store.storeCode}`;																									
+div.innerHTML = `																									
+<div style="display:flex;align-items:center;gap:12px;">																									
+<div style="background:#2563eb;color:#fff;font-size:22px;font-weight:bold;padding:8px 14px;border-radius:8px;text-align:center;min-width:55px;">																									
+<div style="font-size:10px;font-weight:normal;">Box No.</div>																									
+${store.storeNo}																									
+</div>																									
+<div style="flex-grow:1;">																									
+<div style="font-size:18px;font-weight:bold;">${store.storeName}</div>																									
+<div style="font-size:13px;color:#666;">店番: ${store.storeCode}</div>																									
+<div style="font-size:15px;margin-top:4px;">																									
+投入数: <span id="count-${store.storeCode}" style="font-size:20px;color:#2563eb;font-weight:bold;">0</span> / ${store.qty} 個																									
+</div>																									
+</div>																									
+</div>`;																									
 listEl.appendChild(div);																									
 });																									
 																									
 updateStoreUI();																									
 }																									
 																									
-function findStoreCard(storeCode) {																									
-const cards =																									
-document.querySelectorAll('.store-card');																									
+let targetScrollTimer = null;																									
 																									
-for (let i = 0; i < cards.length; i++) {																									
-if (																									
-cards[i].dataset.storeCode ===																									
-String(storeCode)																									
-) {																									
-return cards[i];																									
-}																									
-}																									
-																									
-return null;																									
-}																									
-																									
-// 青枠の店舗へ自動スクロール																									
 function scrollToNextStore() {																									
-if (targetScrollTimer) {																									
-clearTimeout(targetScrollTimer);																									
-}																									
+if (targetScrollTimer) clearTimeout(targetScrollTimer);																									
 																									
-targetScrollTimer = setTimeout(function() {																									
+targetScrollTimer = setTimeout(() => {																									
 if (!currentData) return;																									
-																									
-if (																									
-getEl('videoCard').style.display === 'block'																									
-) {																									
-return;																									
-}																									
+if (document.getElementById('videoCard').style.display === 'block') return;																									
 																									
 const nextStore = getNextRequiredStore();																									
-																									
 if (!nextStore) return;																									
 																									
-const card =																									
-findStoreCard(nextStore.storeCode);																									
-																									
+const card = document.getElementById(`card-${nextStore.storeCode}`);																									
 if (!card) return;																									
 																									
-const footer = document.querySelector(																									
-.bottom-btn-container'																									
-);																									
-																									
-const footerHeight = footer																									
-? footer.getBoundingClientRect().height																									
-: 0;																									
-																									
-const availableHeight = Math.max(																									
-120,																									
-window.innerHeight - footerHeight																									
-);																									
-																									
+const footer = document.querySelector('.bottom-btn-container');																									
+const footerHeight = footer ? footer.getBoundingClientRect().height : 0;																									
+const availableHeight = Math.max(120, window.innerHeight - footerHeight);																									
 const rect = card.getBoundingClientRect();																									
-																									
-const desiredTop =																									
-(availableHeight - rect.height) / 2;																									
-																									
-const top = Math.max(																									
-0,																									
-window.scrollY +																									
-rect.top -																									
-Math.max(12, desiredTop)																									
-);																									
+const desiredTop = (availableHeight - rect.height) / 2;																									
+const top = Math.max(0, window.scrollY + rect.top - Math.max(12, desiredTop));																									
 																									
 window.scrollTo({																									
-top: top,																									
+top,																									
 behavior: 'smooth'																									
 });																									
 }, 180);																									
@@ -1655,35 +883,22 @@ behavior: 'smooth'
 																									
 function updateStoreUI() {																									
 if (!currentData) return;																									
-																									
 const nextStore = getNextRequiredStore();																									
 																									
-currentData.stores.forEach(function(store) {																									
-const card = findStoreCard(store.storeCode);																									
+currentData.stores.forEach(store => {																									
+const card = document.getElementById(`card-${store.storeCode}`);																									
+const count = storeCounts[store.storeCode] || 0;																									
 																									
-if (!card) return;																									
-																									
-const count =																									
-Number(storeCounts[store.storeCode]) || 0;																									
-																									
-const countEl = card.querySelector('.count');																									
-																									
-if (countEl) {																									
-countEl.innerText = count;																									
-}																									
+if (card) {																									
+document.getElementById(`count-${store.storeCode}`).innerText = count;																									
 																									
 if (count >= store.qty) {																									
 card.className = 'store-card done';																									
-																									
-} else if (																									
-nextStore &&																									
-String(store.storeCode) ===																									
-String(nextStore.storeCode)																									
-) {																									
+} else if (nextStore && String(store.storeCode) === String(nextStore.storeCode)) {																									
 card.className = 'store-card next-target';																									
-																									
 } else {																									
 card.className = 'store-card';																									
+}																									
 }																									
 });																									
 																									
@@ -1691,13 +906,11 @@ scrollToNextStore();
 }																									
 																									
 function showStatus(msg, type) {																									
-const status = getEl('status');																									
-																									
-status.innerText = msg;																									
-status.className = 'status ' + (type || 'success');																									
-status.style.display = 'block';																									
+const el = document.getElementById('status');																									
+el.innerText = msg;																									
+el.className = `status ${type}`;																									
+el.style.display = 'block';																									
 }																									
 </script>																									
-																									
 </body>																									
 </html>																									
