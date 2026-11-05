@@ -325,7 +325,7 @@ cursor: pointer;
 <div id="workerModal" class="modal-overlay" style="display:none;">																									
 <div class="modal-content">																									
 <div class="modal-title">👤 作業者名の入力</div>																									
-<div class="modal-desc">ピッキング作業を行うあなたの名前を入力してください。</div>																									
+<div class="modal-desc">ピッキング作業を行うあなたの名前を入力してください。（スプレッドシートのA列に記録されます）</div>																									
 <input type="text" id="workerNameInput" class="modal-input" placeholder="例: 田中" autocomplete="off">																									
 <button class="modal-btn" onclick="saveWorkerName()">作業開始する</button>																									
 </div>																									
@@ -400,11 +400,22 @@ let isProcessing = false;
 let audioCtx = null;																									
 let currentZoom = 1.0;																									
 																									
+// 音声読み上げ関数（Speech Synthesis API）																									
+function speakText(text) {																									
+if ('speechSynthesis' in window) {																									
+window.speechSynthesis.cancel(); // 連続発話を整理																									
+const utterance = new SpeechSynthesisUtterance(text);																									
+utterance.lang = 'ja-JP';																									
+utterance.rate = 1.1; // 少しキビキビ喋る速度																									
+utterance.pitch = 1.0;																									
+window.speechSynthesis.speak(utterance);																									
+}																									
+}																									
+																									
 window.onload = function() {																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) currentZoom = parseFloat(savedZoom);																									
 																									
-// 【変更】起動時は名前を保持せず、毎回必ず未設定にしてモーダルを表示する																									
 localStorage.removeItem('picking_worker_name');																									
 document.getElementById('displayWorkerName').innerText = '未設定';																									
 openWorkerModal();																									
@@ -424,6 +435,10 @@ document.getElementById('homeProgressCard').style.display = 'none';
 renderProductData(currentData);																									
 currentMode = 'OUT_STORE';																									
 showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
+const nextStore = getNextRequiredStore();																									
+if (nextStore) {																									
+speakText(`次はボックス ${nextStore.storeNo}`);																									
+}																									
 }																									
 } catch (e) {																									
 localStorage.removeItem('picking_current_data');																									
@@ -450,6 +465,7 @@ localStorage.setItem('picking_worker_name', name);
 document.getElementById('displayWorkerName').innerText = name;																									
 document.getElementById('workerModal').style.display = 'none';																									
 showStatus(`作業者名「${name}」を設定しました`, 'success');																									
+speakText(`${name}さん、作業を開始してください`);																									
 }																									
 																									
 function checkWorkerAndStart(callbackFunc) {																									
@@ -631,9 +647,12 @@ currentMode = 'OUT_STORE';
 const nextStore = getNextRequiredStore();																									
 if (!nextStore) {																									
 showStatus('🎉 この商品は全店舗完了済みです', 'success');																									
+speakText('この商品は全店舗完了済みです');																									
 currentMode = 'OUT_ITEM';																									
 } else {																									
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
+// 【音声ガイド】商品をスキャンしたら「ボックス何番」と喋る																									
+speakText(`ボックス ${nextStore.storeNo}`);																									
 }																									
 } else {																									
 triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
@@ -664,6 +683,8 @@ playSuccessBeep();
 activeStoreCode = nextStore.storeCode;																									
 currentMode = 'OUT_NEED';																									
 showStatus(`スキャン成功！ (${nextStore.storeName}): 商品をスキャンしてください`, 'success');																									
+// 【音声ガイド】ボックス（店舗）をスキャンしたら「商品をスキャンしてください」や促しの案内																									
+speakText(`商品をスキャンしてください`);																									
 }																									
 																									
 function countNeedItemScan(barcode) {																									
@@ -682,6 +703,9 @@ updateStoreUI();
 stopScan();																									
 																									
 if (count >= targetStore.qty) {																									
+// 【音声ガイド】ボックスをスキャンして必要数に達した（または1店舗分完了した）時：「〇個スキャン」と言ったあとに次へ																									
+speakText(`${count}個スキャン。完了`);																									
+																									
 if (currentData.stores.every(s => (storeCounts[s.storeCode] || 0) >= s.qty)) {																									
 showStatus('全店舗完了！スプレッドシートへ保存中...', 'success');																									
 sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0, false);																									
@@ -689,8 +713,14 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 currentMode = 'OUT_STORE';																									
 const nextStore = getNextRequiredStore();																									
 showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+// 【音声ガイド】終わったら「次はボックス何番」と喋る																									
+setTimeout(() => {																									
+speakText(`次はボックス ${nextStore.storeNo}`);																									
+}, 600);																									
 }																									
 } else {																									
+// 【音声ガイド】商品をボックスに入れてスキャンするたびに「〇個スキャン」と喋る																									
+speakText(`${count}個スキャン`);																									
 showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
 }																									
 }																									
@@ -715,6 +745,7 @@ document.getElementById('outArea').style.display = 'none';
 document.getElementById('homeProgressCard').style.display = 'block';																									
 currentMode = 'OUT_ITEM';																									
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
+speakText('全店舗のピッキングが完了しました');																									
 if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！');																									
 }, 300);																									
 }																									
@@ -722,7 +753,6 @@ if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完
 function resetAppDataLocally() {																									
 if (confirm('現在のアプリ側の作業データをリセット（破棄）しますか？\n（スプレッドシート側のデータには一切影響しません）')) {																									
 localStorage.clear();																									
-																									
 currentData = null;																									
 storeCounts = {};																									
 activeStoreCode = null;																									
@@ -731,6 +761,7 @@ document.getElementById('outArea').style.display = 'none';
 document.getElementById('videoCard').style.display = 'none';																									
 document.getElementById('homeProgressCard').style.display = 'block';																									
 showStatus('アプリ側のデータをリセットしました', 'success');																									
+speakText('データをリセットしました');																									
 }																									
 }																									
 																									
@@ -812,11 +843,12 @@ stopScan();
 showStatus(msg, 'error');																									
 if (navigator.vibrate) navigator.vibrate([200, 100, 200]);																									
 playBuzzer();																									
+speakText('エラーです');																									
 }																									
 																									
 function renderProductData(data) {																									
 document.getElementById('outArea').style.display = 'block';																									
-document.getElementById('itemSub').innerText = `バーコード: ${data.barcode}`;																									
+document.getElementById('itemSub', data.barcode).innerText = `バーコード: ${data.barcode}`;																									
 const listEl = document.getElementById('storeList');																									
 listEl.innerHTML = '';																									
 																									
