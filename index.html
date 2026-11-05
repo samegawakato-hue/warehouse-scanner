@@ -367,7 +367,7 @@ cursor: pointer;
 																									
 <div class="card" id="homeProgressCard">																									
 <div style="font-weight:bold;font-size:16px;margin-bottom:6px;color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b;font-size:14px;line-height:1.5;">下のボタンから（カメラ）または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
+<div style="color:#64748b;font-size:14px;line-height:1.5;">下のボタンから「カメラ」または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
 </div>																									
 																									
 <div id="outArea" class="card" style="display:none;">																									
@@ -406,7 +406,7 @@ if ('speechSynthesis' in window) {
 window.speechSynthesis.cancel();																									
 const utterance = new SpeechSynthesisUtterance(text);																									
 utterance.lang = 'ja-JP';																									
-utterance.rate = 1.0;																									
+utterance.rate = 0.95;																									
 utterance.pitch = 1.0;																									
 utterance.volume = 1.0;																									
 window.speechSynthesis.speak(utterance);																									
@@ -438,7 +438,7 @@ currentMode = 'OUT_STORE';
 showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
 const nextStore = getNextRequiredStore();																									
 if (nextStore) {																									
-speakText(`次はボックス ${nextStore.storeNo}`);																									
+speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
 }																									
 }																									
 } catch (e) {																									
@@ -652,7 +652,8 @@ speakText('この商品は全店舗完了済みです');
 currentMode = 'OUT_ITEM';																									
 } else {																									
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-speakText(`次はボックス ${nextStore.storeNo}`);																									
+// 【音声ガイド】商品スキャン時：「次はボックス〇番、〇個入れてください」とトータル数を喋る																									
+speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
 }																									
 } else {																									
 triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
@@ -695,7 +696,7 @@ playSuccessBeep();
 const targetStore = currentData.stores.find(s => String(s.storeCode) === String(activeStoreCode));																									
 storeCounts[activeStoreCode] = (storeCounts[activeStoreCode] || 0) + 1;																									
 const count = storeCounts[activeStoreCode];																									
-const remainingQty = targetStore.qty - count; // 【変更】残りの必要数を計算																									
+const remainingQty = targetStore.qty - count; // 残り必要数																									
 																									
 localStorage.setItem('picking_store_counts', JSON.stringify(storeCounts));																									
 updateStoreUI();																									
@@ -711,12 +712,13 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 currentMode = 'OUT_STORE';																									
 const nextStore = getNextRequiredStore();																									
 showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+// 【音声ガイド】次のボックスに移った時も「次はボックス〇番、〇個入れてください」と案内																									
 setTimeout(() => {																									
-speakText(`次はボックス ${nextStore.storeNo}`);																									
+speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
 }, 800);																									
 }																									
 } else {																									
-// 【変更】商品をスキャンするたびに「あと〇個」と残り必要数を喋る																									
+// 【音声ガイド】商品をスキャンするたびに「あと〇個」と案内																									
 speakText(`あと ${remainingQty} 個`);																									
 showStatus(`スキャン成功！ (${count}/${targetStore.qty}個) - 次の1個をスキャン`, 'success');																									
 }																									
