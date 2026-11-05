@@ -711,10 +711,10 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 } else {																									
 currentMode = 'OUT_STORE';																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
-// 【音声ガイド】次のボックスに移った時も「次はボックス〇番に、〇個入れてください、、」と案内																									
+showStatus(`スキャン成功！ ${targetStore.storeName} 完了。【${nextStore.storeName}】の箱をスキャン`, 'success');																									
+// 【音声ガイド】次のボックスに移った時も「次はケース〇番に、〇個入れてください、、」と案内																									
 setTimeout(() => {																									
-speakText(`次はボックス ${nextStore.storeNo}に、${nextStore.qty}個入れてください、、`);																									
+speakText(`次はケース ${nextStore.storeNo}に、${nextStore.qty}個入れてください、、`);																									
 }, 800);																									
 }																									
 } else {																									
