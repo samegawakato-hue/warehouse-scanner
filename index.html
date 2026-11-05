@@ -712,9 +712,9 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 currentMode = 'OUT_STORE';																									
 const nextStore = getNextRequiredStore();																									
 showStatus(`スキャン成功！ ${targetStore.storeName} 完了。次は【${nextStore.storeName}】の箱をスキャン`, 'success');																									
-// 【音声ガイド】次のボックスに移った時も「次はボックス〇番、〇個入れてください」と案内																									
+// 【音声ガイド】次のボックスに移った時も「次はボックス〇番に、〇個入れてください、、」と案内																									
 setTimeout(() => {																									
-speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
+speakText(`次はボックス ${nextStore.storeNo}に、${nextStore.qty}個入れてください、、`);																									
 }, 800);																									
 }																									
 } else {																									
@@ -745,7 +745,7 @@ document.getElementById('homeProgressCard').style.display = 'block';
 currentMode = 'OUT_ITEM';																									
 showStatus('全店舗の出荷完了・保存成功！', 'success');																									
 speakText('全店舗のピッキングが完了しました');																									
-if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完了し、スプレッドシートへ正常に保存されました！');																									
+if (!isAutoSync) alert('🎉 この商品の全店舗へのピッキングが完了ました！');																									
 }, 300);																									
 }																									
 																									
