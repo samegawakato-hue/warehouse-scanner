@@ -711,8 +711,8 @@ sendBatchCompletionToGAS(currentData.barcode, currentData.stores, storeCounts, 0
 } else {																									
 currentMode = 'OUT_STORE';																									
 const nextStore = getNextRequiredStore();																									
-showStatus(`スキャン成功！ ${targetStore.storeName} 完了。【${nextStore.storeName}】の箱をスキャン`, 'success');																									
-// 【音声ガイド】次のボックスに移った時も「次はケース〇番に、〇個入れてください、、」と案内																									
+showStatus(`スキャン成功！ ${targetStore.storeName} 完了。【${nextStore.storeName}】のケースをスキャン`, 'success');																									
+// 【音声ガイド】次のケースに移った時も「次はケース〇番に、〇個入れてください、、」と案内																									
 setTimeout(() => {																									
 speakText(`次はケース ${nextStore.storeNo}に、${nextStore.qty}個入れてください、、`);																									
 }, 800);																									
