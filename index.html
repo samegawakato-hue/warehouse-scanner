@@ -438,7 +438,7 @@ currentMode = 'OUT_STORE';
 showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
 const nextStore = getNextRequiredStore();																									
 if (nextStore) {																									
-speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
+speakText(`次はケース ${nextStore.storeNo}に、${nextStore.qty}個入れてください`);																									
 }																									
 }																									
 } catch (e) {																									
@@ -651,8 +651,8 @@ showStatus('🎉 この商品は全店舗完了済みです', 'success');
 speakText('この商品は全店舗完了済みです');																									
 currentMode = 'OUT_ITEM';																									
 } else {																									
-showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-// 【音声ガイド】商品スキャン時：「次はケース〇番に、〇個入れてください」とトータル数を喋る																									
+showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください、、`, 'success');																									
+// 【音声ガイド】商品スキャン時：「次はケース〇番に、〇個入れてください、、」とトータル数を喋る																									
 speakText(`次はケース ${nextStore.storeNo}に、${nextStore.qty}個入れてください`);																									
 }																									
 } else {																									
