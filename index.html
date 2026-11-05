@@ -652,8 +652,8 @@ speakText('この商品は全店舗完了済みです');
 currentMode = 'OUT_ITEM';																									
 } else {																									
 showStatus(`スキャン成功！次は【${nextStore.storeName}】(箱No.${nextStore.storeNo}) をスキャンしてください`, 'success');																									
-// 【音声ガイド】商品スキャン時：「次はボックス〇番、〇個入れてください」とトータル数を喋る																									
-speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
+// 【音声ガイド】商品スキャン時：「次はケース〇番、〇個入れてください」とトータル数を喋る																									
+speakText(`次はケース ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
 }																									
 } else {																									
 triggerError(`❌ ${data.error || '未登録の商品です'}`);																									
