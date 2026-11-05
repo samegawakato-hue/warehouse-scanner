@@ -367,7 +367,7 @@ cursor: pointer;
 																									
 <div class="card" id="homeProgressCard">																									
 <div style="font-weight:bold;font-size:16px;margin-bottom:6px;color:#2563eb;">📋 ピッキング管理</div>																									
-<div style="color:#64748b;font-size:14px;line-height:1.5;">下のボタンからకరణ（カメラ）または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
+<div style="color:#64748b;font-size:14px;line-height:1.5;">下のボタンから（カメラ）または「Bluetoothスキャナー」を選んでバーコードをスキャンしてください。</div>																									
 </div>																									
 																									
 <div id="outArea" class="card" style="display:none;">																									
@@ -406,7 +406,7 @@ if ('speechSynthesis' in window) {
 window.speechSynthesis.cancel();																									
 const utterance = new SpeechSynthesisUtterance(text);																									
 utterance.lang = 'ja-JP';																									
-utterance.rate = 0.95;																									
+utterance.rate = 1.0;																									
 utterance.pitch = 1.0;																									
 utterance.volume = 1.0;																									
 window.speechSynthesis.speak(utterance);																									
