@@ -277,10 +277,12 @@ padding: 16px;
 .modal-content {																									
 background: #fff;																									
 width: 100%;																									
-max-width: 360px;																									
+max-width: 380px;																									
 border-radius: 12px;																									
 padding: 20px;																									
 box-shadow: 0 4px 20px rgba(0,0,0,0.15);																									
+max-height: 90vh;																									
+overflow-y: auto;																									
 }																									
 .modal-title {																									
 font-size: 18px;																									
@@ -292,9 +294,30 @@ text-align: center;
 .modal-desc {																									
 font-size: 13px;																									
 color: #64748b;																									
-margin-bottom: 16px;																									
+margin-bottom: 12px;																									
 text-align: center;																									
 line-height: 1.4;																									
+}																									
+.worker-preset-grid {																									
+display: grid;																									
+grid-template-columns: repeat(2, 1fr);																									
+gap: 8px;																									
+margin-bottom: 12px;																									
+}																									
+.btn-worker-preset {																									
+background: #f1f5f9;																									
+color: #1e293b;																									
+border: 2px solid #cbd5e1;																									
+padding: 12px 8px;																									
+border-radius: 8px;																									
+font-size: 15px;																									
+font-weight: bold;																									
+cursor: pointer;																									
+}																									
+.btn-worker-preset.selected {																									
+background: #eff6ff;																									
+color: #1d4ed8;																									
+border-color: #2563eb;																									
 }																									
 .modal-input {																									
 width: 100%;																									
@@ -303,7 +326,41 @@ font-size: 16px;
 border: 1px solid #cbd5e1;																									
 border-radius: 8px;																									
 box-sizing: border-box;																									
-margin-bottom: 16px;																									
+margin-bottom: 14px;																									
+}																									
+.voice-setting-box {																									
+background: #f8fafc;																									
+border: 1px solid #e2e8f0;																									
+border-radius: 8px;																									
+padding: 10px;																									
+margin-bottom: 14px;																									
+}																									
+.voice-label {																									
+display: block;																									
+font-size: 12px;																									
+font-weight: bold;																									
+color: #475569;																									
+margin-bottom: 6px;																									
+}																									
+.voice-select {																									
+width: 100%;																									
+padding: 8px;																									
+font-size: 14px;																									
+border: 1px solid #cbd5e1;																									
+border-radius: 6px;																									
+background: #fff;																									
+margin-bottom: 8px;																									
+}																									
+.btn-voice-test {																									
+width: 100%;																									
+background: #e2e8f0;																									
+color: #1e293b;																									
+border: none;																									
+padding: 8px;																									
+border-radius: 6px;																									
+font-size: 13px;																									
+font-weight: bold;																									
+cursor: pointer;																									
 }																									
 .modal-btn {																									
 width: 100%;																									
@@ -322,20 +379,37 @@ cursor: pointer;
 																									
 <div id="workerModal" class="modal-overlay" style="display:none;">																									
 <div class="modal-content">																									
-<div class="modal-title">👤 作業者名の入力</div>																									
-<div class="modal-desc">ピッキング作業を行うあなたの名前を入力してください。</div>																									
-<input type="text" id="workerNameInput" class="modal-input" placeholder="例: 田中" autocomplete="off">																									
-<button class="modal-btn" onclick="saveWorkerName()">作業開始する</button>																									
+<div class="modal-title">👤 作業者名の入力・選択</div>																									
+<div class="modal-desc">名前をタップして選ぶか、下の欄に直接入力してください。</div>																									
+																									
+<div class="worker-preset-grid">																									
+<button type="button" class="btn-worker-preset" onclick="selectPresetWorker('楠原', this)">楠原</button>																									
+<button type="button" class="btn-worker-preset" onclick="selectPresetWorker('加藤', this)">加藤</button>																									
+<button type="button" class="btn-worker-preset" onclick="selectPresetWorker('服部', this)">服部</button>																									
+<button type="button" class="btn-worker-preset" onclick="selectPresetWorker('渋谷', this)">渋谷</button>																									
+</div>																									
+																									
+<input type="text" id="workerNameInput" class="modal-input" placeholder="その他の名前を入力（例: 田中）" autocomplete="off" oninput="onManualWorkerInput()">																									
+																									
+<div class="voice-setting-box">																									
+<label class="voice-label" for="voiceSelect">🔊 音声の声（端末の日本語音声）</label>																									
+<select id="voiceSelect" class="voice-select" onchange="saveVoiceSelection()">																									
+<option value="">デフォルト音声</option>																									
+</select>																									
+<button type="button" class="btn-voice-test" onclick="testVoice()">🔈 声のテスト（「次はボックス1、3個入れてください」）</button>																									
+</div>																									
+																									
+<button type="button" class="modal-btn" onclick="saveWorkerName()">作業開始する</button>																									
 </div>																									
 </div>																									
 																									
 <div class="top-buttons-container">																									
-<div class="worker-badge" onclick="openWorkerModal()" title="クリックして作業者名を変更">																									
+<div class="worker-badge" onclick="openWorkerModal()" title="クリックして作業者名・音声を変更">																									
 <span>👤</span> <span id="displayWorkerName">未設定</span> <span style="font-size:11px; color:#64748b;">(変更)</span>																									
 </div>																									
 <div style="display:flex; gap:6px;">																									
-<button class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
-<button id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映</button>																									
+<button type="button" class="btn-reset-top" onclick="resetAppDataLocally()">🗑️ リセット</button>																									
+<button type="button" id="btnSyncProgress" class="btn-sync-top" onclick="syncData()">🔄 反映</button>																									
 </div>																									
 </div>																									
 																									
@@ -359,7 +433,7 @@ cursor: pointer;
 <button type="button" id="zoom15x" class="btn-zoom" onclick="setZoom(1.5)">1.5x</button>																									
 <button type="button" id="zoom2x" class="btn-zoom" onclick="setZoom(2.0)">2.0x (拡大)</button>																									
 </div>																									
-<button onclick="stopScan()" class="btn-sync" style="margin-top:8px;background:#94a3b8;position:relative;z-index:20;">キャンセル（カメラを閉じる）</button>																									
+<button type="button" onclick="stopScan()" class="btn-sync" style="margin-top:8px;background:#94a3b8;position:relative;z-index:20;">キャンセル（カメラを閉じる）</button>																									
 </div>																									
 </div>																									
 																									
@@ -382,12 +456,11 @@ cursor: pointer;
 <option value="false">正順 (店舗 1 → 10)</option>																									
 <option value="true">逆順 (店舗 10 → 1)</option>																									
 </select>																									
-<button class="btn-action-full" onclick="checkWorkerAndStart(startScan)">📷 カメラでスキャン開始</button>																									
-<button class="btn-action-scanner" onclick="checkWorkerAndStart(activateScannerMode)">📡 スキャナーを使う（Bluetooth）</button>																									
+<button type="button" class="btn-action-full" onclick="checkWorkerAndStart(startScan)">📷 カメラでスキャン開始</button>																									
+<button type="button" class="btn-action-scanner" onclick="checkWorkerAndStart(activateScannerMode)">📡 スキャナーを使う（Bluetooth）</button>																									
 </div>																									
 																									
 <script>																									
-// セルコピペで前後に " や "" が付いた場合も自動で綺麗にする補正処理																									
 const RAW_GAS_URL = "https://script.google.com/macros/s/AKfycbzpTjnexWmyCy4kgopOseUdKh_IAJ9aZpMQXshk-SGYIcp3IUYA9tpX5mgFNYCuKJ_n9g/exec";																									
 const GAS_URL = String(RAW_GAS_URL).replace(/^"+|"+$/g, '').trim();																									
 const codeReader = new ZXing.BrowserMultiFormatReader();																									
@@ -403,20 +476,69 @@ let storeCounts = {};
 let isProcessing = false;																									
 let audioCtx = null;																									
 let currentZoom = 1.0;																									
+let availableVoices = [];																									
+let selectedVoiceName = localStorage.getItem('picking_voice_name') || '';																									
+																									
+function loadVoices() {																									
+if (!('speechSynthesis' in window)) return;																									
+const voices = window.speechSynthesis.getVoices();																									
+const jpVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('ja'));																									
+availableVoices = jpVoices.length > 0 ? jpVoices : voices;																									
+																									
+const selectEl = document.getElementById('voiceSelect');																									
+if (!selectEl) return;																									
+																									
+const currentVal = selectedVoiceName || selectEl.value;																									
+selectEl.innerHTML = '<option value="">端末デフォルト音声</option>';																									
+																									
+availableVoices.forEach(v => {																									
+const opt = document.createElement('option');																									
+opt.value = v.name;																									
+opt.textContent = `${v.name} (${v.lang})`;																									
+if (v.name === currentVal) {																									
+opt.selected = true;																									
+}																									
+selectEl.appendChild(opt);																									
+});																									
+}																									
+																									
+function saveVoiceSelection() {																									
+const selectEl = document.getElementById('voiceSelect');																									
+selectedVoiceName = selectEl ? selectEl.value : '';																									
+localStorage.setItem('picking_voice_name', selectedVoiceName);																									
+}																									
+																									
+function testVoice() {																									
+saveVoiceSelection();																									
+speakText('次はボックス 1、3個入れてください');																									
+}																									
 																									
 function speakText(text) {																									
 if ('speechSynthesis' in window) {																									
 window.speechSynthesis.cancel();																									
 const utterance = new SpeechSynthesisUtterance(text);																									
 utterance.lang = 'ja-JP';																									
-utterance.rate = 1.05;																									
+utterance.rate = 0.95;																									
 utterance.pitch = 1.0;																									
 utterance.volume = 1.0;																									
+																									
+if (selectedVoiceName) {																									
+const voices = window.speechSynthesis.getVoices();																									
+const matched = voices.find(v => v.name === selectedVoiceName);																									
+if (matched) utterance.voice = matched;																									
+}																									
 window.speechSynthesis.speak(utterance);																									
 }																									
 }																									
 																									
+if ('speechSynthesis' in window) {																									
+loadVoices();																									
+window.speechSynthesis.onvoiceschanged = loadVoices;																									
+}																									
+																									
 window.onload = function() {																									
+loadVoices();																									
+																									
 const savedZoom = localStorage.getItem('picking_camera_zoom');																									
 if (savedZoom) currentZoom = parseFloat(savedZoom);																									
 																									
@@ -441,7 +563,7 @@ currentMode = 'OUT_STORE';
 showStatus('前回の作業データを復元しました。次の箱または商品をスキャンしてください。', 'success');																									
 const nextStore = getNextRequiredStore();																									
 if (nextStore) {																									
-speakText(`次は、ボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
+speakText(`次はボックス ${nextStore.storeNo}、${nextStore.qty}個入れてください`);																									
 }																									
 }																									
 } catch (e) {																									
@@ -452,17 +574,36 @@ localStorage.removeItem('picking_store_counts');
 setupBluetoothScannerListener();																									
 };																									
 																									
+function selectPresetWorker(name, btnEl) {																									
+document.getElementById('workerNameInput').value = name;																									
+document.querySelectorAll('.btn-worker-preset').forEach(b => b.classList.remove('selected'));																									
+if (btnEl) btnEl.classList.add('selected');																									
+}																									
+																									
+function onManualWorkerInput() {																									
+const val = document.getElementById('workerNameInput').value.trim();																									
+document.querySelectorAll('.btn-worker-preset').forEach(b => {																									
+if (b.textContent.trim() === val) {																									
+b.classList.add('selected');																									
+} else {																									
+b.classList.remove('selected');																									
+}																									
+});																									
+}																									
+																									
 function openWorkerModal() {																									
+loadVoices();																									
 const current = localStorage.getItem('picking_worker_name') || '';																									
 document.getElementById('workerNameInput').value = current;																									
+onManualWorkerInput();																									
 document.getElementById('workerModal').style.display = 'flex';																									
-setTimeout(() => document.getElementById('workerNameInput').focus(), 100);																									
 }																									
 																									
 function saveWorkerName() {																									
+saveVoiceSelection();																									
 const name = document.getElementById('workerNameInput').value.trim();																									
 if (!name) {																									
-alert('作業者名を入力してください');																									
+alert('作業者名を選択または入力してください');																									
 return;																									
 }																									
 localStorage.setItem('picking_worker_name', name);																									
